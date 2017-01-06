@@ -31,10 +31,13 @@ public:
     class Listener
     {
     public:
+        Listener() { PendingCallback.set (false); }
+
         virtual void SixteenthTicked (int index) {}
         virtual void EighthTicked    (int index) {}
         virtual void BeatTicked      (int index) {}
         virtual void BarTicked       (int index) {}
+        juce::Atomic<int> PendingCallback;
     };
 
     void AddListener      (Listener* listener) { Listeners.add    (listener); }
@@ -55,10 +58,12 @@ private:
 
         void Tick()
         {
-            CurrentIndex = (CurrentIndex + 1) % NumSubdivisions;
+            CurrentIndex ++;
             if (TickCallback != 0)
                 TickCallback (CurrentIndex);
         }
+
+        int GetModuloTickIndex() { return CurrentIndex % NumSubdivisions; }
 
         std::function<void (int index)> TickCallback;
         int CurrentIndex;
@@ -78,10 +83,26 @@ public:
     {
         MetronomeRunning = true;
     }
+
     UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
     void StopMetronome()
     {
         MetronomeRunning = false;
+        WaitForMetronomeCallbacksToComplete();
+    }
+
+    UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
+    void WaitForMetronomeCallbacksToComplete()
+    {
+        while (HasListenerPendingCallback()) {}
+    }
+
+    FORCEINLINE bool HasListenerPendingCallback() 
+    {
+        for (auto listener : Listeners.getListeners())
+            if (listener->PendingCallback.get() == 1)
+                return true;
+        return false;
     }
 
     UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
@@ -143,7 +164,7 @@ private:
     FORCEINLINE void TickRhythmicUnit (R& unit, Args&... args) 
     {
         unit.Tick();
-        if (unit.CurrentIndex == 0)
+        if (unit.GetModuloTickIndex() == 0)
             TickRhythmicUnit (args...);
     }
 };

@@ -27,16 +27,22 @@ public:
 		Listener.SetOwner (this);
 	}
 
+    void OnComponentDestroyed (bool bDestroyingHierarchy) override
+    {
+        Listener.SetOwner (nullptr);
+    }
+
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeListener")
 	void RegisterWithMetronome (UMetronomeComponent* metronome)
 	{
-		metronome->AddListener (&Listener);
+        if (metronome != nullptr)
+		    metronome->AddListener (&Listener);
 	}
 
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeListener")
 	void DetachFromMetronome (UMetronomeComponent* metronome)
 	{
-		if (metronome->ContainsListener (&Listener))
+		if (metronome != nullptr && metronome->ContainsListener (&Listener))
 			metronome->RemoveListener (&Listener);
 	}
 
@@ -49,6 +55,24 @@ public:
     UPROPERTY(BlueprintAssignable, Category="JUCE-Metronome")
     FMetronomeBar OnBar;
 
+    UPROPERTY(BlueprintReadonly, Category="JUCE-Metronome")
+    float LastSixteenthTime = 0.0f;
+    UPROPERTY(BlueprintReadonly, Category="JUCE-Metronome")
+    float LastEighthTime = 0.0f;
+    UPROPERTY(BlueprintReadonly, Category="JUCE-Metronome")
+    float LastBeatTime = 0.0f;
+    UPROPERTY(BlueprintReadonly, Category="JUCE-Metronome")
+    float LastBarTime = 0.0f;
+
+    UFUNCTION(BlueprintCallable, Category="JUCE-Metronome")
+    float GetTimeSinceLastSixteenth();
+    UFUNCTION(BlueprintCallable, Category="JUCE-Metronome")
+    float GetTimeSinceLastEighth();
+    UFUNCTION(BlueprintCallable, Category="JUCE-Metronome")
+    float GetTimeSinceLastBeat();
+    UFUNCTION(BlueprintCallable, Category="JUCE-Metronome")
+    float GetTimeSinceLastBar();
+
 private:
 	class MetronomeListener : public UMetronomeComponent::Listener
 	{
@@ -56,7 +80,7 @@ private:
 		void SetOwner (UMetronomeListenerComponent* owner) { Owner = owner; }
 
 		virtual void SixteenthTicked (int index) override;
-        virtual void EighthTicked     (int index) override;
+        virtual void EighthTicked    (int index) override;
         virtual void BeatTicked      (int index) override;
         virtual void BarTicked       (int index) override;
 

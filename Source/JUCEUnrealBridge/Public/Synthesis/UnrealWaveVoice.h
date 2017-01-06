@@ -26,14 +26,14 @@ class UnrealWaveVoice : public UnrealSynthesiserVoice
 public:
 	struct UnrealWaveSound : public UnrealSynthesiserSoundDescriptor {};
 
-	FORCEINLINE UnrealWaveVoice() : currentAngle (0), angleDelta (0)
+	FORCEINLINE UnrealWaveVoice() : currentAngle (0), angleDelta (0), level (0)
     {}
 
     FORCEINLINE void SetWaveformType (WaveType w) { WaveformType = w; }
-    FORCEINLINE void SetAttackRateSeconds  (double rate)  { Envelope.SetAttackRateSeconds  (rate, getSampleRate()); }
-    FORCEINLINE void SetDecayRateSeconds   (double rate)  { Envelope.SetDecayRateSeconds   (rate, getSampleRate()); }
-    FORCEINLINE void SetReleaseRateSeconds (double rate)  { Envelope.SetReleaseRateSeconds (rate, getSampleRate()); }
-	FORCEINLINE void SetSustainLevel       (double level) { Envelope.SetSustainLevel       (level); }
+    FORCEINLINE void SetAttackRateSeconds  (double rate)     { Envelope.SetAttackRateSeconds  (rate, getSampleRate()); }
+    FORCEINLINE void SetDecayRateSeconds   (double rate)     { Envelope.SetDecayRateSeconds   (rate, getSampleRate()); }
+    FORCEINLINE void SetReleaseRateSeconds (double rate)     { Envelope.SetReleaseRateSeconds (rate, getSampleRate()); }
+	FORCEINLINE void SetSustainLevel       (double susLevel) { Envelope.SetSustainLevel       (susLevel); }
 private:
     UPROPERTY(Transient)
     UADSREnvelope Envelope;
@@ -41,7 +41,7 @@ private:
     UPROPERTY(Transient)
     WaveType WaveformType = WaveType::Sin;
 	
-    double currentAngle, angleDelta/*, level, tailOff*/;
+    double currentAngle, angleDelta, level;
 
 	FORCEINLINE virtual bool canPlaySound (juce::SynthesiserSound* sound) override
     {
@@ -52,8 +52,8 @@ private:
                     					juce::SynthesiserSound*, int /*currentPitchWheelPosition*/) override
     {
         currentAngle = 0.0;
-        Envelope.TriggerEnvelopeStart();//level = velocity;//start envelope (envelope state = attack). / Gate enevelope
-        //tailOff = 0.0;
+        level = (double) velocity;
+        Envelope.TriggerEnvelopeStart();
 
         double cyclesPerSecond = juce::MidiMessage::getMidiNoteInHertz (midiNoteNumber);
         double cyclesPerSample = cyclesPerSecond / getSampleRate();
@@ -63,21 +63,14 @@ private:
     
 	FORCEINLINE virtual void stopNote (float /*velocity*/, bool allowTailOff) override
     {
-        if (allowTailOff) //Gate envelope false??
+        if (allowTailOff)
         {
             Envelope.TriggerEnvelopeEnd();
-            // start a tail-off by setting this flag. The render callback will pick up on
-            // this and do a fade out, calling clearCurrentNote() when it's finished.
-
-            //if (tailOff == 0.0) // we only need to begin a tail-off if it's not already doing so - the
-            //                    // stopNote method could be called more than once.
-            //    tailOff = 1.0;
         }
-        else //Reset envelope??
+        else
         {
             Envelope.Reset();
             // we're being told to stop playing immediately, so reset everything..
-
             clearCurrentNote();
             angleDelta = 0.0;
         }
@@ -107,8 +100,8 @@ private:
 
             while (--numSamples >= 0)
             {
-                const double level = Envelope.process();
-                const float currentSample = getCurrentSample (pulseWidth)  * level;
+                const double envLevel = Envelope.process();
+                const float currentSample = getCurrentSample (pulseWidth)  * envLevel * level;
 
                 for (int i = outputBuffer.getNumChannels(); --i >= 0;)
                     outputBuffer.addSample (i, startSample, currentSample);
@@ -123,43 +116,6 @@ private:
                     break;
                 }
             }
-
-            //if (tailOff > 0)
-            //{
-            //    while (--numSamples >= 0)
-            //    {
-            //        const float currentSample = getCurrentSample (pulseWidth)  * level * tailOff;
-
-            //        for (int i = outputBuffer.getNumChannels(); --i >= 0;)
-            //            outputBuffer.addSample (i, startSample, currentSample);
-
-            //        currentAngle += angleDelta;
-            //        ++startSample;
-
-            //        tailOff *= 0.99;
-
-            //        if (tailOff <= 0.005)
-            //        {
-            //            clearCurrentNote();
-
-            //            angleDelta = 0.0;
-            //            break;
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    while (--numSamples >= 0)
-            //    {
-            //        const float currentSample = getCurrentSample (pulseWidth) * level;
-
-            //        for (int i = outputBuffer.getNumChannels(); --i >= 0;)
-            //            outputBuffer.addSample (i, startSample, currentSample);
-
-            //        currentAngle += angleDelta;
-            //        ++startSample;
-            //    }
-            //}
         }
     }
 };
