@@ -1,0 +1,20 @@
+{
+	"FileVersion":      1,
+	"FriendlyName":     "JUCE Unreal Bridge",
+	"VersionName":      "0.0.1",
+	"CreatedBy":        "Sean Soraghan",
+	"CreatedByUrl":     "https://roli.com",
+	"EngineVersion":    "4.14.0",
+	"Description":      "Links the JUCE library with the Unreal engine.",
+	"Category":         "ROLI.JUCEUnrealBridge",
+	"EnabledByDefault": true,
+
+	"Modules":
+	[
+		{
+			"Name"         : "JUCEUnrealBridge",
+      "Type"         : "Runtime",
+      "LoadingPhase" : "PreDefault"
+		}
+	]
+}
