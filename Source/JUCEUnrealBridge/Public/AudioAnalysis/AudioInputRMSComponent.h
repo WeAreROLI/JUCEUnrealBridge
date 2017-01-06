@@ -9,6 +9,11 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "AudioInputRMSComponent.generated.h"
 
+/*
+    A Simple Component that keeps a running calculation of the RMS Amplitude of the audio input.
+    Future extensions to the plugin will include full audio feature extraction capabilities.
+*/
+
 UCLASS(meta=(BlueprintSpawnableComponent), ClassGroup="JUCE-Components")
 class UAudioInputRMSComponent : public UAudioCallbackComponent
 {

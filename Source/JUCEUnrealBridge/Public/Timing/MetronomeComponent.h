@@ -22,11 +22,6 @@ enum class RhythmicUnitType : uint8
 //================================================================================
 //================================================================================
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMetronomeSixteenth, int, index);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMetronomeEighth,    int, index);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMetronomeBeat,      int, index);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMetronomeBar,       int, index);
-
 UCLASS(meta=(BlueprintSpawnableComponent), ClassGroup="JUCE-Components")
 class JUCEUNREALBRIDGE_API UMetronomeComponent : public UTimeTickerComponent
 {
@@ -37,15 +32,16 @@ public:
     {
     public:
         virtual void SixteenthTicked (int index) {}
-        virtual void EigthTicked     (int index) {}
+        virtual void EighthTicked    (int index) {}
         virtual void BeatTicked      (int index) {}
         virtual void BarTicked       (int index) {}
     };
 
+    void AddListener      (Listener* listener) { Listeners.add    (listener); }
+    void RemoveListener   (Listener* listener) { Listeners.remove (listener); }
+    bool ContainsListener (Listener* listener) { return Listeners.contains (listener); }
 private:
     juce::ListenerList<Listener> Listeners;
-    void AddListener    (Listener* listener) { Listeners.add    (listener); }
-    void RemoveListener (Listener* listener) { Listeners.remove (listener); }
 
     struct RhythmicUnit
     {
@@ -76,20 +72,6 @@ public:
         Super::OnComponentDestroyed (bDestroyingHierarchy);
         StopMetronome();
     }
-
-	UPROPERTY(BlueprintAssignable, Category="JUCE-Metronome")
-    FMetronomeSixteenth OnSixteenth;
-    UPROPERTY(BlueprintAssignable, Category="JUCE-Metronome")
-    FMetronomeEighth OnEighth;
-    UPROPERTY(BlueprintAssignable, Category="JUCE-Metronome")
-    FMetronomeBeat OnBeat;
-    UPROPERTY(BlueprintAssignable, Category="JUCE-Metronome")
-    FMetronomeBar OnBar;
-
-    virtual void SixteenthTickCallback (int index);
-    virtual void EighthTickCallback    (int index);
-    virtual void BeatTickCallback      (int index);
-    virtual void BarTickCallback       (int index);
 
     UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
     void StartMetronome()
