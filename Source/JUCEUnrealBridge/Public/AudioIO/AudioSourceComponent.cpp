@@ -37,9 +37,19 @@ int    UAudioSourceComponent::UAudioSource::getSamplesPerBlockExpected() { retur
 
 //======================================================================================================
 //======================================================================================================
-void UAudioSourceComponent::Initialise()
+UAudioSourceComponent::UAudioSourceComponent()
+{
+    bWantsInitializeComponent = true;
+}
+
+void UAudioSourceComponent::StartAudio()
 {
     RegisterAudioSource();
+}
+
+void UAudioSourceComponent::StopAudio()
+{
+    UnregisterAudioSource();
 }
 
 void UAudioSourceComponent::OnComponentDestroyed (bool bDestroyingHierarchy) 

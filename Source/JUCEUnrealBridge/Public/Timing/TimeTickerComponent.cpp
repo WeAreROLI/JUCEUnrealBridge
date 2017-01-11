@@ -7,7 +7,7 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "TimeTickerComponent.h"
 
-void UTimeTickerComponent::Initialise()
+void UTimeTickerComponent::InitializeComponent()
 {
     SamplesPerTick  = GetSampleRate() * TickTimeSeconds;
 	AssignAudioCallback ([this](const float **inputChannelData, int numInputChannels, 
@@ -15,8 +15,6 @@ void UTimeTickerComponent::Initialise()
 	{
 		AudioCallback (inputChannelData, numInputChannels, outputChannelData, numOutputChannels, numSamples);
 	});
-
-	RegisterAudioCallback();
 }
 
 void UTimeTickerComponent::AudioCallback (const float **inputChannelData, int numInputChannels, 

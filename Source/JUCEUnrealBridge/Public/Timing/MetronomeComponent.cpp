@@ -18,4 +18,6 @@ void UMetronomeComponent::BeginPlay()
     {
         TickMetronome();
     });
+
+    StartAudio();
 }

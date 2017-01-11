@@ -35,10 +35,10 @@ public:
     FORCEINLINE void SetReleaseRateSeconds (double rate)     { Envelope.SetReleaseRateSeconds (rate, getSampleRate()); }
 	FORCEINLINE void SetSustainLevel       (double susLevel) { Envelope.SetSustainLevel       (susLevel); }
 private:
-    UPROPERTY(Transient)
+    //UPROPERTY(Transient)
     UADSREnvelope Envelope;
 
-    UPROPERTY(Transient)
+    //UPROPERTY(Transient)
     WaveType WaveformType = WaveType::Sin;
 	
     double currentAngle, angleDelta, level;

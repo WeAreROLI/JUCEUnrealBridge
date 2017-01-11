@@ -15,6 +15,7 @@ class UAudioCallbackComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+    UAudioCallbackComponent();
     void OnComponentDestroyed (bool bDestroyingHierarchy) override;
 
 private:
@@ -39,17 +40,21 @@ private:
     };
 
 public: 
-    /*
-    This function should be called by the owning object during initialisation, for example in the BeginPlay() function.
-    */
-    UFUNCTION(BlueprintCallable, Category = "JUCE-AudioCallback")
-    void RegisterAudioCallback();
-
     void AssignAudioCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
 	    						                  float **outputChannelData, int numOutputChannels, int numSamples)> func);
-    void UnregisterAudioCallback();
-
+    
     double GetSampleRate();
+   
+    /**
+    This should be called by the owning actor during begin play.
+    */
+    UFUNCTION(BlueprintCallable, Category = "JUCE-AudioCallbackComponent")
+    void StartAudio();
+    UFUNCTION(BlueprintCallable, Category = "JUCE-AudioCallbackComponent")
+    void StopAudio();
 private:
     UAudioDeviceCallback deviceCallback;
+
+    void RegisterAudioCallback();
+    void UnregisterAudioCallback();
 };

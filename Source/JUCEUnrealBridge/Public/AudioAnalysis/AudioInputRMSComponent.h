@@ -43,15 +43,13 @@ private:
     juce::Atomic<float> RMS;
 
 public:
-	UFUNCTION (BlueprintCallable, Category = "JUCE-AudioListener")
-	void Initialise()
+	void InitializeComponent() override
 	{
 		AssignAudioCallback ([this] (const float **inputChannelData, int numInputChannels, 
 		    						                         float **outputChannelData, int numOutputChannels, int numSamples) 
 	    { 
 	        AudioCallback (inputChannelData, numInputChannels, outputChannelData, numOutputChannels, numSamples); 
 	    });
-	    RegisterAudioCallback();
 	}
 	
     UFUNCTION (BlueprintCallable, Category = "JUCE-AudioListener")

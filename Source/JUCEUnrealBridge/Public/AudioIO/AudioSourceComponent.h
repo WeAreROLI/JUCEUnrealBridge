@@ -92,18 +92,22 @@ private:
     };
 
 public: 
-    /*
-    This function should be called by the owning object during initialisation, for example in the BeginPlay() function.
+    UAudioSourceComponent();
+    /**
+    This should be called by the owning actor during begin play.
     */
-    UFUNCTION(BlueprintCallable, Category = "JUCE-AudioSource")
-    virtual void Initialise();
-    void   RegisterAudioSource();
+    UFUNCTION(BlueprintCallable, Category = "JUCE-AudioCallbackComponent")
+    void StartAudio();
+    UFUNCTION(BlueprintCallable, Category = "JUCE-AudioCallbackComponent")
+    void StopAudio();
+
     void   OnComponentDestroyed (bool bDestroyingHierarchy) override;
-    void   UnregisterAudioSource();
     void   AssignGetNextAudioBlockCallback (std::function<void (const juce::AudioSourceChannelInfo& bufferToFill)> func);
     void   AssignPrepareToPlayCallback     (std::function<void (int samplesPerBlockExpected, double sampleRate)> func);
     double GetSampleRate();
 private:
     UAudioSource            audioSource;
     juce::AudioSourcePlayer audioSourcePlayer;
+    void   RegisterAudioSource();
+    void   UnregisterAudioSource();
 };

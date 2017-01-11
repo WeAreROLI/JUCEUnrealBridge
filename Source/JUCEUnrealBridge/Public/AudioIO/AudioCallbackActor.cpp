@@ -20,8 +20,8 @@ void AAudioCallbackActor::BeginPlay()
     { 
         AudioCallback (inputChannelData, numInputChannels, outputChannelData, numOutputChannels, numSamples); 
     });
-    AudioCallbackComponent->RegisterAudioCallback();
     AddOwnedComponent (AudioCallbackComponent);
+    AudioCallbackComponent->StartAudio();
 }
 
 void AAudioCallbackActor::AudioCallback (const float **inputChannelData, int numInputChannels, 

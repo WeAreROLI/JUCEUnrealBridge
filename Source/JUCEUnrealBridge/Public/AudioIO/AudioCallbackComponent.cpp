@@ -7,6 +7,21 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "AudioCallbackComponent.h"
 
+UAudioCallbackComponent::UAudioCallbackComponent()
+{
+    bWantsInitializeComponent = true;
+}
+
+void UAudioCallbackComponent::StartAudio()
+{
+    RegisterAudioCallback();
+}
+
+void UAudioCallbackComponent::StopAudio()
+{
+    UnregisterAudioCallback();
+}
+
 void UAudioCallbackComponent::RegisterAudioCallback()
 {
     if (IJUCEUnrealBridge::IsAvailable())

@@ -19,8 +19,8 @@ void AAudioSourceActor::BeginPlay()
     { 
         GetNextBuffer (bufferToFill); 
     });
-    AudioSourceComponent->RegisterAudioSource();
     AddOwnedComponent (AudioSourceComponent);
+    AudioSourceComponent->StartAudio();
 }
 
 void AAudioSourceActor::GetNextBuffer (const juce::AudioSourceChannelInfo& bufferToFill)

@@ -18,12 +18,12 @@ void ATimeTickerActor::BeginPlay()
     
     if (TimeTickerComponent != nullptr)
     {
-    	TimeTickerComponent->Initialise();
     	TimeTickerComponent->SetTickCallback([this]()
     	{
     		TickCallback();
     	});
     	AddOwnedComponent (TimeTickerComponent);
+        TimeTickerComponent->StartAudio();
     }
 }
 

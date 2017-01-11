@@ -26,11 +26,7 @@ public:
     UFUNCTION (BlueprintCallable, Category = "JUCE-TimeTicker")
     float GetTickTime();
 
-    /*
-    This function should be called by the owning object during initialisation, for example in the BeginPlay() function.
-    */
-    UFUNCTION (BlueprintCallable, Category = "JUCE-TimeTicker")
-    void Initialise();
+    void InitializeComponent() override;
 
 private:
     double TickTimeSeconds     = 0.125;

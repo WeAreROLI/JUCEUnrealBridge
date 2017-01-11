@@ -120,6 +120,36 @@ public:
     	Divisor   = divisor;
     	UpdateSubdivisions();
     }
+    UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
+    float GetSecondsPerRhythmicUnit (RhythmicUnitType type)
+    {
+        switch (type)
+        {
+            case RhythmicUnitType::Sixteenth: return GetSecondsPerSixteenth();
+            case RhythmicUnitType::Eighth:    return GetSecondsPerEighth();
+            case RhythmicUnitType::Beat:      return GetSecondsPerBeat();
+            default:                          return GetSecondsPerSixteenth();
+        }
+    }
+
+    UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
+    float GetSecondsPerSixteenth()
+    {
+        return GetTickTime();
+    }
+
+    UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
+    float GetSecondsPerEighth()
+    {
+        return GetTickTime() * 2.0f;
+    }
+
+    UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
+    float GetSecondsPerBeat()
+    {
+        return GetTickTime() * 4.0f;
+    }
+
 
 private:
     bool MetronomeRunning = false;

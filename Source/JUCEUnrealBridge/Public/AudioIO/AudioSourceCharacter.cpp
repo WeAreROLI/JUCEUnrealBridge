@@ -26,8 +26,8 @@ void AAudioSourceCharacter::BeginPlay()
         GetNextBuffer (bufferToFill); 
     });
     
-    AudioSourceComponent->RegisterAudioSource();
     AddOwnedComponent (AudioSourceComponent);
+    AudioSourceComponent->StartAudio();
 }
 
 double AAudioSourceCharacter::GetSampleRate()

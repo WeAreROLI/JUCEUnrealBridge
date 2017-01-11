@@ -16,6 +16,10 @@ class JUCEUNREALBRIDGE_API UNoteEventInfo : public UObject
     GENERATED_BODY()
 public:
     UNoteEventInfo(){}
+    ~UNoteEventInfo() 
+    {
+        ClearTimer();
+    }
 
     FORCEINLINE void StartNote (juce::MidiMessageCollector* messageCollector, int midiChannel, int midiNoteNumber, 
                                 float onVelocity, float offVelocity, double noteLengthMs)
@@ -29,17 +33,20 @@ public:
 
         juce::MidiMessage m (juce::MidiMessage::noteOn (MidiChannel, MidiNote, NoteOnVelocity));
         m.setTimeStamp (juce::Time::getMillisecondCounterHiRes() * 0.001);
-        UE_LOG(LogTemp,Warning,TEXT("Start Note At: %f"), juce::Time::getMillisecondCounterHiRes() * 0.001f );
         MidiCollector->addMessageToQueue (m);
         IsActive = true;
         HasNoteOffScheduled = false;
     }
 
-    FORCEINLINE void ScheduleEndNote (FTimerManager& timerManager)
+    FORCEINLINE void ScheduleEndNote (FTimerManager* timerManager)
     {
-        timerManager.ClearTimer (NoteOffHandle);
-        timerManager.SetTimer (NoteOffHandle, this, &UNoteEventInfo::EndNote, NoteLengthMs * 0.001f, false);
-        HasNoteOffScheduled = true;
+        if (timerManager != nullptr)
+        {
+            TimerManager = timerManager;
+            TimerManager->ClearTimer (NoteOffHandle);
+            TimerManager->SetTimer (NoteOffHandle, this, &UNoteEventInfo::EndNote, NoteLengthMs * 0.001f, false);
+            HasNoteOffScheduled = true;
+        }
     }
 
     FORCEINLINE void EndNote()
@@ -48,7 +55,6 @@ public:
         {
             juce::MidiMessage m (juce::MidiMessage::noteOff (MidiChannel, MidiNote, NoteOffVelocity));
             m.setTimeStamp (juce::Time::getMillisecondCounterHiRes() * 0.001);
-            UE_LOG(LogTemp,Warning,TEXT("End Note At: %f"), juce::Time::getMillisecondCounterHiRes() * 0.001f );
             MidiCollector->addMessageToQueue (m);
         }
 
@@ -60,6 +66,14 @@ public:
         IsActive            = false;
         HasNoteOffScheduled = false;
     }
+
+    FORCEINLINE void ClearTimer() 
+    {
+        if (TimerManager != nullptr)
+            TimerManager->ClearTimer (NoteOffHandle);
+    }
+
+    FTimerManager* TimerManager = nullptr;
 
     juce::MidiMessageCollector* MidiCollector;
     UPROPERTY()
@@ -85,9 +99,21 @@ class JUCEUNREALBRIDGE_API UNoteEventPlayer : public UObject
 {
     GENERATED_BODY()
 public:
+    UNoteEventPlayer()
+    {
+        ClearNoteOffTimers();
+    }
+
+    FORCEINLINE void ClearNoteOffTimers()
+    {
+        for (int i = 0; i < NoteEvents.Num(); ++i)
+            NoteEvents[i]->ClearTimer();
+    }
 
     FORCEINLINE void SetNumberOfNoteSlots (int num)
     {
+        ClearNoteOffTimers();
+        NoteEvents.Empty();
         for (int i = 0; i < num; ++i)
             NoteEvents.Add (NewObject<UNoteEventInfo> (this));
     }
@@ -103,7 +129,7 @@ public:
         }
     }
 
-    FORCEINLINE void ScheduleNoteEndsForActiveNotes (FTimerManager& timerManager)
+    FORCEINLINE void ScheduleNoteEndsForActiveNotes (FTimerManager* timerManager)
     {
         for (int i = 0; i < NoteEvents.Num(); ++i)
         {
@@ -140,11 +166,12 @@ class JUCEUNREALBRIDGE_API UUnrealSynthesiserComponent : public UAudioSourceComp
 {
 	GENERATED_BODY()
 private:
-    
-
+    bool Initialised = false;
 public:
 	UUnrealSynthesiserComponent()
     {
+        bWantsInitializeComponent = true;
+        Initialised = false;
         PrimaryComponentTick.bCanEverTick = true;
         NotePlayer = CreateDefaultSubobject<UNoteEventPlayer> (TEXT("SynthNotePlayer"));
     	AssignPrepareToPlayCallback ([this] (int samplesPerBlockExpected, double sampleRate)
@@ -167,95 +194,147 @@ public:
         Synth.addSound (new UnrealWaveVoice::UnrealWaveSound());
     }
 
-    FORCEINLINE virtual void Initialise() override
+    FORCEINLINE virtual void InitializeComponent() override
     {
-        Super::Initialise();
         RegisterComponent();
         NotePlayer->SetNumberOfNoteSlots (20);
     }
 
     FORCEINLINE virtual void TickComponent (float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override
     {
-        NotePlayer->ScheduleNoteEndsForActiveNotes (GetWorld()->GetTimerManager());
+        if (Initialised)
+            NotePlayer->ScheduleNoteEndsForActiveNotes (&GetWorld()->GetTimerManager());
     }
 
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void SetWaveformType (WaveType w)
     {
-        for (int i = 0; i < Synth.getNumVoices(); ++i)
+        if (Initialised)
         {
-            UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
-            if (voice != nullptr)
-                voice->SetWaveformType (w);
+            for (int i = 0; i < Synth.getNumVoices(); ++i)
+            {
+                UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
+                if (voice != nullptr)
+                    voice->SetWaveformType (w);
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Setting parameters on uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
         }
     }
 
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void SetAttackRateSeconds (float rate) 
     {
-        for (int i = 0; i < Synth.getNumVoices(); ++i)
+        if (Initialised)
         {
-            UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
-            if (voice != nullptr)
-                voice->SetAttackRateSeconds ((double) rate);
+            for (int i = 0; i < Synth.getNumVoices(); ++i)
+            {
+                UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
+                if (voice != nullptr)
+                    voice->SetAttackRateSeconds ((double) rate);
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Setting parameters on uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
         }
     }
 
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void SetDecayRateSeconds (float rate) 
     {
-        for (int i = 0; i < Synth.getNumVoices(); ++i)
+        if (Initialised)
         {
-            UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
-            if (voice != nullptr)
-                voice->SetDecayRateSeconds ((double) rate);
+            for (int i = 0; i < Synth.getNumVoices(); ++i)
+            {
+                UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
+                if (voice != nullptr)
+                    voice->SetDecayRateSeconds ((double) rate);
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Setting parameters on uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
         }
     }
 
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void SetReleaseRateSeconds (float rate) 
     {
-        for (int i = 0; i < Synth.getNumVoices(); ++i)
+        if (Initialised)
         {
-            UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
-            if (voice != nullptr)
-                voice->SetReleaseRateSeconds ((double) rate);
+            for (int i = 0; i < Synth.getNumVoices(); ++i)
+            {
+                UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
+                if (voice != nullptr)
+                    voice->SetReleaseRateSeconds ((double) rate);
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Setting parameters on uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
         }
     }
 
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void SetSustainLevel (float level)
     {
-        for (int i = 0; i < Synth.getNumVoices(); ++i)
+        if (Initialised)
         {
-            UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
-            if (voice != nullptr)
-                voice->SetSustainLevel ((double) level);
+            for (int i = 0; i < Synth.getNumVoices(); ++i)
+            {
+                UnrealWaveVoice* voice = (UnrealWaveVoice*) Synth.getVoice (i);
+                if (voice != nullptr)
+                    voice->SetSustainLevel ((double) level);
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Setting parameters on uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
         }
     }
 
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void PlayNoteEvent (int midiChannel, int midiNoteNumber, float onVelocity, float offVelocity, float timeMs)
     {
-        NotePlayer->StartNoteEvent (&MidiCollector, midiChannel, midiNoteNumber, onVelocity, offVelocity, timeMs);
+        if (Initialised)
+            NotePlayer->StartNoteEvent (&MidiCollector, midiChannel, midiNoteNumber, onVelocity, offVelocity, timeMs);
+        else
+            UE_LOG(LogTemp, Warning, TEXT("Setting parameters on uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
     }
 
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void TriggerNoteOn (int midiChannel, int midiNoteNumber, float velocity)
     {
-        juce::MidiMessage m (juce::MidiMessage::noteOn (midiChannel, midiNoteNumber, velocity));
-        m.setTimeStamp (juce::Time::getMillisecondCounterHiRes() * 0.001);
+        if (Initialised)
+        {
+            juce::MidiMessage m (juce::MidiMessage::noteOn (midiChannel, midiNoteNumber, velocity));
+            m.setTimeStamp (juce::Time::getMillisecondCounterHiRes() * 0.001);
 
-        MidiCollector.addMessageToQueue (m);
+            MidiCollector.addMessageToQueue (m);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Setting parameters on uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
+        }
     }
 
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void TriggerNoteOff (int midiChannel, int midiNoteNumber, float velocity)
     {
-        juce::MidiMessage m (juce::MidiMessage::noteOff (midiChannel, midiNoteNumber, velocity));
-        m.setTimeStamp (juce::Time::getMillisecondCounterHiRes() * 0.001);
+        if (Initialised)
+        {
+            juce::MidiMessage m (juce::MidiMessage::noteOff (midiChannel, midiNoteNumber, velocity));
+            m.setTimeStamp (juce::Time::getMillisecondCounterHiRes() * 0.001);
 
-        MidiCollector.addMessageToQueue (m);
+            MidiCollector.addMessageToQueue (m);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Setting parameters on uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
+        }
     }
 protected:
     FORCEINLINE virtual void PrepareToPlay (int /*samplesPerBlockExpected*/, double sampleRate)
@@ -263,6 +342,8 @@ protected:
         MidiCollector.reset (sampleRate);
 
         Synth.setCurrentPlaybackSampleRate (sampleRate);
+
+        Initialised = true;
     }
 
     FORCEINLINE virtual void GetNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
@@ -285,7 +366,7 @@ public:
     // turns them into blocks that we can process in our audio callback
     juce::MidiMessageCollector MidiCollector;
 
-    UPROPERTY(Transient)
+    UPROPERTY()
     UNoteEventPlayer* NotePlayer;
 
     // the synth itself!
