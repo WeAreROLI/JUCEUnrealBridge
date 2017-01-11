@@ -174,7 +174,11 @@ public:
         Initialised = false;
         PrimaryComponentTick.bCanEverTick = true;
         NotePlayer = CreateDefaultSubobject<UNoteEventPlayer> (TEXT("SynthNotePlayer"));
-    	AssignPrepareToPlayCallback ([this] (int samplesPerBlockExpected, double sampleRate)
+    }
+
+    FORCEINLINE virtual void InitializeComponent() override
+    {
+        AssignPrepareToPlayCallback ([this] (int samplesPerBlockExpected, double sampleRate)
     	{
     		PrepareToPlay (samplesPerBlockExpected, sampleRate);
     	});
@@ -183,7 +187,9 @@ public:
     	{
     		GetNextAudioBlock (bufferToFill);
     	});
+
         // Add some voices to our synth, to play the sounds..
+        Synth.clearVoices();
         for (int i = 4; --i >= 0;)
         {
             Synth.addVoice (new UnrealWaveVoice());   // These voices will play our custom sine-wave sounds..
@@ -192,11 +198,6 @@ public:
         // ..and add a sound for them to play...
         Synth.clearSounds();
         Synth.addSound (new UnrealWaveVoice::UnrealWaveSound());
-    }
-
-    FORCEINLINE virtual void InitializeComponent() override
-    {
-        RegisterComponent();
         NotePlayer->SetNumberOfNoteSlots (20);
     }
 
