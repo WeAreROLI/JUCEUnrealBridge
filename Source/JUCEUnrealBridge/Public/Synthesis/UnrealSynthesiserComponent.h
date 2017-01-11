@@ -199,6 +199,7 @@ public:
         Synth.clearSounds();
         Synth.addSound (new UnrealWaveVoice::UnrealWaveSound());
         NotePlayer->SetNumberOfNoteSlots (20);
+        StartAudio();
     }
 
     FORCEINLINE virtual void TickComponent (float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override

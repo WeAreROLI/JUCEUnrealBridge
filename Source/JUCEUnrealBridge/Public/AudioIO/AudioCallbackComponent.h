@@ -31,7 +31,7 @@ private:
 	    void audioDeviceAboutToStart (juce::AudioIODevice *device) override;
 	    void audioDeviceStopped() override;
 
-        void SetAudioDeviceIOCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
+        void setAudioDeviceIOCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
 	    						                           float **outputChannelData, int numOutputChannels, int numSamples)> func);
 
     private:

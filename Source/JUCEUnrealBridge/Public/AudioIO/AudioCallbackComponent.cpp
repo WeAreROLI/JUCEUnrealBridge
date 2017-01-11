@@ -47,7 +47,7 @@ double UAudioCallbackComponent::GetSampleRate()
     return setup.sampleRate;
 }
 
-void UAudioCallbackComponent::UAudioDeviceCallback::SetAudioDeviceIOCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
+void UAudioCallbackComponent::UAudioDeviceCallback::setAudioDeviceIOCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
 	    						                                              float **outputChannelData, int numOutputChannels, int numSamples)> func)
 {
     UnrealAudioDeviceIOCallback = func;
@@ -66,5 +66,5 @@ void UAudioCallbackComponent::UAudioDeviceCallback::audioDeviceStopped() {}
 void UAudioCallbackComponent::AssignAudioCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
 	    						                                       float **outputChannelData, int numOutputChannels, int numSamples)> func)
 {
-    deviceCallback.SetAudioDeviceIOCallback (func);
+    deviceCallback.setAudioDeviceIOCallback (func);
 }

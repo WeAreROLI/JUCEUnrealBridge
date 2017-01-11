@@ -9,6 +9,10 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "AudioSourceComponent.generated.h"
 
+/**
+This Component is a wrapper around a juce::AudioSource object and acts as an audio source for the global juce::AudioDeviceManager instance.
+
+*/
 UCLASS()
 class UAudioSourceComponent : public UActorComponent
 {
@@ -75,7 +79,7 @@ private:
 	        an interrupt, so be careful not to do too much work here, as that will cause
 	        audio glitches!
 
-	        @see AudioSourceChannelInfo, prepareToPlay, releaseResources
+	        @see juce::AudioSourceChannelInfo, prepareToPlay, releaseResources
 	    */
 	    void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override;
 	    void setGetNextBufferCallback (std::function<void (const juce::AudioSourceChannelInfo& bufferToFill)> func);
