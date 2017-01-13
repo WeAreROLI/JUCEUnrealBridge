@@ -21,8 +21,6 @@ public:
         bWantsInitializeComponent = true;
         Initialised = false;
         PrimaryComponentTick.bCanEverTick = true;
-        //NotePlayer = CreateDefaultSubobject<UNoteEventPlayer> (TEXT("SynthNotePlayer"));
-        //NotePlayer->SetNumberOfNoteSlots (20);
     }
 
     FORCEINLINE virtual void InitializeComponent() override
