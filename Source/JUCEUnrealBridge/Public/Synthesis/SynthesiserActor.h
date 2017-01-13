@@ -10,7 +10,7 @@
 #include "SynthesiserComponent.h"
 #include "SynthesiserActor.generated.h"
 
-/** An actor that has a synthesiser component, as well as functions to set the parameters in the synth. 
+/** An actor that has a synthesiser component. 
 */
 UCLASS()
 class JUCEUNREALBRIDGE_API ASynthesiserActor : public AActor
