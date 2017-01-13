@@ -52,6 +52,17 @@ public:
             NextBarIndex.set       (-1);
         }
 
+        /** Async callbacks should be used for heavy-weight tasks 
+            (such as spawning / destroying game objects)
+        */
+        virtual void AsyncSixteenthCallback (int index) {}
+        virtual void AsyncEighthCallback    (int index) {}
+        virtual void AsyncBeatCallback      (int index) {}
+        virtual void AsyncBarCallback       (int index) {}
+
+        /** Synchronous callbacks should be reserved for very light-
+            weight processing.
+        */
         virtual void SixteenthCallback (int index) {}
         virtual void EighthCallback    (int index) {}
         virtual void BeatCallback      (int index) {}
@@ -76,10 +87,10 @@ public:
         void BeatTicked      (int index);
         void BarTicked       (int index);
 
-        void ScheduleSixteenthCallbackIfNeeded();
-        void ScheduleEighthCallbackIfNeeded();
-        void ScheduleBeatCallbackIfNeeded();
-        void ScheduleBarCallbackIfNeeded();
+        void ScheduleAsyncSixteenthCallbackIfNeeded();
+        void ScheduleAsyncEighthCallbackIfNeeded();
+        void ScheduleAsyncBeatCallbackIfNeeded();
+        void ScheduleAsyncBarCallbackIfNeeded();
     };
 
     void AddListener      (Listener* listener) { Listeners.add    (listener); }

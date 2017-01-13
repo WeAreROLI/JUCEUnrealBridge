@@ -7,12 +7,31 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "MetronomeComponent.h"
 
-void UMetronomeComponent::Listener::SixteenthTicked (int index) { NextSixteenthIndex.set (index); }
-void UMetronomeComponent::Listener::EighthTicked (int index)    { NextEighthIndex.set (index); }
-void UMetronomeComponent::Listener::BeatTicked (int index)      { NextBeatIndex.set (index); }
-void UMetronomeComponent::Listener::BarTicked (int index)       { NextBarIndex.set (index); }
+void UMetronomeComponent::Listener::SixteenthTicked (int index) 
+{ 
+    NextSixteenthIndex.set (index);
+    SixteenthCallback (index);
+}
 
-void UMetronomeComponent::Listener::ScheduleSixteenthCallbackIfNeeded()
+void UMetronomeComponent::Listener::EighthTicked (int index)    
+{ 
+    NextEighthIndex.set (index); 
+    EighthCallback (index);
+}
+
+void UMetronomeComponent::Listener::BeatTicked (int index)      
+{ 
+    NextBeatIndex.set (index);
+    BeatCallback (index);
+}
+
+void UMetronomeComponent::Listener::BarTicked (int index)       
+{ 
+    NextBarIndex.set (index);
+    BarCallback (index);
+}
+
+void UMetronomeComponent::Listener::ScheduleAsyncSixteenthCallbackIfNeeded()
 {
     int sixteenthIndex = NextSixteenthIndex.get();
     if (sixteenthIndex != -1)
@@ -20,14 +39,14 @@ void UMetronomeComponent::Listener::ScheduleSixteenthCallbackIfNeeded()
         PendingCallback.set (1);
         AsyncTask (ENamedThreads::NormalTaskPriority, [this, sixteenthIndex] () 
         {
-            SixteenthCallback (sixteenthIndex);
+            AsyncSixteenthCallback (sixteenthIndex);
             PendingCallback.set (0);
         });
         NextSixteenthIndex.set (-1);
     }
 }
 
-void UMetronomeComponent::Listener::ScheduleEighthCallbackIfNeeded()
+void UMetronomeComponent::Listener::ScheduleAsyncEighthCallbackIfNeeded()
 {
     int eighthIndex = NextEighthIndex.get();
     if (eighthIndex != -1)
@@ -35,13 +54,13 @@ void UMetronomeComponent::Listener::ScheduleEighthCallbackIfNeeded()
         PendingCallback.set (1);
         AsyncTask (ENamedThreads::NormalTaskPriority, [this, eighthIndex] () 
         {
-            EighthCallback (eighthIndex);
+            AsyncEighthCallback (eighthIndex);
             PendingCallback.set (0);
         });
         NextEighthIndex.set (-1);
     }
 }
-void UMetronomeComponent::Listener::ScheduleBeatCallbackIfNeeded()
+void UMetronomeComponent::Listener::ScheduleAsyncBeatCallbackIfNeeded()
 {
     int beatIndex = NextBeatIndex.get();
     if (beatIndex != -1)
@@ -49,14 +68,14 @@ void UMetronomeComponent::Listener::ScheduleBeatCallbackIfNeeded()
         PendingCallback.set (1);
         AsyncTask (ENamedThreads::NormalTaskPriority, [this, beatIndex] () 
         {
-            BeatCallback (beatIndex);
+            AsyncBeatCallback (beatIndex);
             PendingCallback.set (0);
         });
         NextBeatIndex.set (-1);
     }
 }
 
-void UMetronomeComponent::Listener::ScheduleBarCallbackIfNeeded()
+void UMetronomeComponent::Listener::ScheduleAsyncBarCallbackIfNeeded()
 {
     int barIndex = NextBarIndex.get();
     if (barIndex != -1)
@@ -64,7 +83,7 @@ void UMetronomeComponent::Listener::ScheduleBarCallbackIfNeeded()
         PendingCallback.set (1);
         AsyncTask (ENamedThreads::NormalTaskPriority, [this, barIndex] () 
         {
-            BarCallback (barIndex);
+            AsyncBarCallback (barIndex);
             PendingCallback.set (0);
         });
         NextBarIndex.set (-1);
@@ -73,10 +92,10 @@ void UMetronomeComponent::Listener::ScheduleBarCallbackIfNeeded()
 
 void UMetronomeComponent::Listener::Tick()
 {
-    ScheduleSixteenthCallbackIfNeeded();
-    ScheduleEighthCallbackIfNeeded();
-    ScheduleBeatCallbackIfNeeded();
-    ScheduleBarCallbackIfNeeded();
+    ScheduleAsyncSixteenthCallbackIfNeeded();
+    ScheduleAsyncEighthCallbackIfNeeded();
+    ScheduleAsyncBeatCallbackIfNeeded();
+    ScheduleAsyncBarCallbackIfNeeded();
 }
 
 void UMetronomeComponent::BeginPlay()

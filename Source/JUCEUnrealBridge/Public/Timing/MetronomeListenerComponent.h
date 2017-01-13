@@ -101,10 +101,10 @@ private:
 	public:
 		void SetOwner (UMetronomeListenerComponent* owner) { Owner = owner; }
 
-		virtual void SixteenthCallback (int index) override;
-        virtual void EighthCallback    (int index) override;
-        virtual void BeatCallback      (int index) override;
-        virtual void BarCallback       (int index) override;
+		virtual void AsyncSixteenthCallback (int index) override;
+        virtual void AsyncEighthCallback    (int index) override;
+        virtual void AsyncBeatCallback      (int index) override;
+        virtual void AsyncBarCallback       (int index) override;
 
 	private:
 		UMetronomeListenerComponent* Owner;
