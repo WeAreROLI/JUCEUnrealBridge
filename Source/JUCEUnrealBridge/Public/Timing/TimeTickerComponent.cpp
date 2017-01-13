@@ -9,16 +9,12 @@
 
 void UTimeTickerComponent::InitializeComponent()
 {
-    SamplesPerTick  = GetSampleRate() * TickTimeSeconds;
-	AssignAudioCallback ([this](const float **inputChannelData, int numInputChannels, 
-	    						float **outputChannelData, int numOutputChannels, int numSamples)
-	{
-		AudioCallback (inputChannelData, numInputChannels, outputChannelData, numOutputChannels, numSamples);
-	});
+    Super::InitializeComponent();
+    SamplesPerTick = GetSampleRate() * TickTimeSeconds;
 }
 
-void UTimeTickerComponent::AudioCallback (const float **inputChannelData, int numInputChannels, 
-	    						          float **outputChannelData, int numOutputChannels, int numSamples)
+void UTimeTickerComponent::AudioDeviceIOCallback (const float **inputChannelData, int numInputChannels, 
+	    						                  float **outputChannelData, int numOutputChannels, int numSamples)
 {
 	SampleCount += numSamples;
 	if (NextTickFallsInBlock (numSamples))

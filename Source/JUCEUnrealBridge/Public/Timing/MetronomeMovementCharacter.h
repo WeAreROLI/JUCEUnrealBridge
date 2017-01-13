@@ -10,6 +10,14 @@
 #include "MetronomeListenerComponent.h"
 #include "MetronomeMovementCharacter.generated.h"
 
+/** A special character class that can synchronise its movement to a metronome.
+    These characters should first register with a metronome component (using the
+    RegisterWithMetronome function). Their movement velocity can then be synchronised
+    with the metronome using, for example, SetJumpTimeInRhythmicUnits.
+
+    Movements can also be scheduled according to metronomic note lengths, using 
+    BeginRhythmicMove. 
+*/
 UCLASS()
 class JUCEUNREALBRIDGE_API AMetronomeMovementCharacter : public ACharacter
 {
@@ -18,7 +26,6 @@ class JUCEUNREALBRIDGE_API AMetronomeMovementCharacter : public ACharacter
 public:
 	AMetronomeMovementCharacter();
     void BeginPlay() override;
-    void EndPlay (const EEndPlayReason::Type endPlayReason) override;
 
     FORCEINLINE 
     virtual void Tick (float DeltaSeconds) override
@@ -59,32 +66,33 @@ public:
     UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
 	void RegisterWithMetronome (UMetronomeComponent* metronome)
 	{
-        MetronomeComponent = metronome;
         if (MetronomeListenerComponent != nullptr)
 		    MetronomeListenerComponent->RegisterWithMetronome (metronome);
 	}
 
+    /** Causes the character to move continuously in the given direction (normalised)
+        at a rate of 'unitsPer16th' Unreal units every metronomic 16th note. 
+    */
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
-	void DetachFromMetronome (UMetronomeComponent* metronome)
-	{
-		if (MetronomeListenerComponent != nullptr)
-		    MetronomeListenerComponent->DetachFromMetronome (metronome);
-        MetronomeComponent = nullptr;
-	}
-
-	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
-	void SetVelocityInUnitsPer16thNote (FVector directionVector, float unitsPer16th)
+	void SetMetronomicVelocityInUnitsPer16thNote (FVector directionVector, float unitsPer16th)
 	{
         directionVector.Normalize();
 		MetronomicVelocity = directionVector * unitsPer16th;
 	}
 
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
-	FVector GetVeloctyInUnitsPer16thNote()
+	FVector GetMetronomicVeloctyInUnitsPer16thNote()
 	{
 		return MetronomicVelocity;
 	}
+    
+    /** Sets the characters jump z velocity such that its jump will last
+        a given number (numRhythmicUnits) of specific rhythmic subdivisions
+        (rhythmicUnit). 
 
+        For example if you want the characters jump to last 1 beat you can 
+        call SetJumpTimeInRhythmicUnits (RhythmicUnitType::Beat, 1);
+    */
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
 	void SetJumpTimeInRhythmicUnits (RhythmicUnitType rhythmicUnit, int numRhythmicUnits)
 	{
@@ -92,6 +100,9 @@ public:
         GetCharacterMovement()->JumpZVelocity = -GetCharacterMovement()->GetGravityZ() * jumpTime * 0.5f;
 	}
 
+    /** This is called during the Tick function in order to move the character
+        continuously according to its metronomic velocity.
+    */
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
 	void MetronomicMove (float DeltaSeconds)
 	{
@@ -99,6 +110,25 @@ public:
 		SetActorLocation (GetActorLocation() + MetronomicVelocity * velocityMag * DeltaSeconds);
 	}
 
+    /** Causes the character to move to a given target location in the time taken 
+        by a given number of rhythmic subdivisions.
+    */
+    UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
+    void BeginRhythmicMoveToTarget (FVector targetPosition, RhythmicUnitType rhythmicUnit, int numRhythmicUnits)
+    {
+        RhythmicMoveStartPosition = GetActorLocation();
+        
+        CurrentRhythmicMovementLengthSeconds = GetRhythmicUnitMovementTimeSeconds (rhythmicUnit) * numRhythmicUnits;
+        
+        RhythmicMoveTargetPosition = targetPosition;
+        ShouldMoveTowardsTarget = true;
+
+        CurrentRhythmicMoveInterpTimeSeconds = 0.0f;
+    }
+    
+    /** Causes the character to move in a given direction, at a certain speed in Unreal units per 16th, 
+        for a number of rhythmic subdivisions.
+    */
     UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
     void BeginRhythmicMove (FVector directionVector, float unrealUnitsPer16th, RhythmicUnitType rhythmicUnit, int numRhythmicUnits)
     {
@@ -115,6 +145,17 @@ public:
 
         CurrentRhythmicMoveInterpTimeSeconds = 0.0f;
     }
+
+    /** Will return nullptr if the character has not been registered with any metronome component.
+    */
+    UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
+    UMetronomeComponent* GetRegisteredMetronomeComponent()
+    {
+        if (MetronomeListenerComponent != nullptr)
+            return MetronomeListenerComponent->GetMetronomeComponent();
+        return nullptr;
+    }
+
     /**
     This defines the proportion of time a movement lasts, in comparison to a metronomic rhythmic unit.
     When this is 1.0, there is a chance jumps will not complete before the beginning of the next
@@ -124,8 +165,8 @@ public:
     float RhythmicUnitMovementProportion  = 0.9f;
 
     /**
-    Setting this to false will make the BeginRhythmicMove function produce completely
-    linear movement (rather than movements that pulse in rhythm).
+    Setting this to false will make the BeginRhythmicMove and BeginRythmicMoveToTarget 
+    functions produce completely linear movement (rather than movements that pulse in rhythm).
     */
     UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="JUCE-MetronomeMovement")
     bool UsePulseMovement = true;
@@ -153,16 +194,14 @@ public:
     bool RhythmicMovementShouldIgnoreZ = true;
 
 private:
-    UPROPERTY(Transient)
-    UMetronomeComponent* MetronomeComponent;
 	FVector MetronomicVelocity         = FVector (0.0f, 0.0f, 0.0f);
     FVector RhythmicMoveStartPosition  = FVector (0.0f, 0.0f, 0.0f);
     FVector RhythmicMoveTargetPosition = FVector (0.0f, 0.0f, 0.0f);
 
-    float   CurrentRhythmicMoveInterpTimeSeconds = 0.0f;
-    float   CurrentRhythmicMovementLengthSeconds = 0.0f;
+    float CurrentRhythmicMoveInterpTimeSeconds = 0.0f;
+    float CurrentRhythmicMovementLengthSeconds = 0.0f;
     
-    bool ShouldMoveTowardsTarget       = false;
+    bool ShouldMoveTowardsTarget = false;
 
     bool ActorHasReachedTarget()
     {
@@ -171,15 +210,15 @@ private:
 
     float Get16thMovementTimeSeconds()
     {
-        if (MetronomeComponent != nullptr)
-            return MetronomeComponent->GetSecondsPerSixteenth() * RhythmicUnitMovementProportion;
+        if (GetRegisteredMetronomeComponent() != nullptr)
+            return GetRegisteredMetronomeComponent()->GetSecondsPerSixteenth() * RhythmicUnitMovementProportion;
         return 1.0f;
     }
 
     float GetRhythmicUnitMovementTimeSeconds (RhythmicUnitType type)
     {
-        if (MetronomeComponent != nullptr)
-            return MetronomeComponent->GetSecondsPerRhythmicUnit (type) * RhythmicUnitMovementProportion;
+        if (GetRegisteredMetronomeComponent() != nullptr)
+            return GetRegisteredMetronomeComponent()->GetSecondsPerRhythmicUnit (type) * RhythmicUnitMovementProportion;
         return 1.0f;
     }
 };

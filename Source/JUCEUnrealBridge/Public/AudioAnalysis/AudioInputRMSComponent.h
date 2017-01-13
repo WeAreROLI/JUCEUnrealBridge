@@ -20,8 +20,8 @@ class UAudioInputRMSComponent : public UAudioCallbackComponent
 	GENERATED_BODY()
 	
 private:
-	FORCEINLINE void AudioCallback (const float **inputChannelData, int numInputChannels, 
-	    						    float **outputChannelData, int numOutputChannels, int numSamples)
+	FORCEINLINE virtual void AudioDeviceIOCallback (const float **inputChannelData, int numInputChannels, 
+	    						                    float **outputChannelData, int numOutputChannels, int numSamples) override
 	{
 		const float* const* inputData = inputChannelData;
 	    juce::AudioSampleBuffer buffer (numInputChannels, numSamples);
@@ -43,14 +43,6 @@ private:
     juce::Atomic<float> RMS;
 
 public:
-	void InitializeComponent() override
-	{
-		AssignAudioCallback ([this] (const float **inputChannelData, int numInputChannels, 
-		    						                         float **outputChannelData, int numOutputChannels, int numSamples) 
-	    { 
-	        AudioCallback (inputChannelData, numInputChannels, outputChannelData, numOutputChannels, numSamples); 
-	    });
-	}
 	
     UFUNCTION (BlueprintCallable, Category = "JUCE-AudioListener")
     float GetRMS() { return RMS.get(); }

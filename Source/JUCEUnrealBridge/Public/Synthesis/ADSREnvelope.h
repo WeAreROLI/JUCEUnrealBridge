@@ -12,9 +12,12 @@
 #pragma once
 
 #include "JUCEUnrealBridgePCH.h"
-#include "UnrealADSREnvelope.generated.h"
+#include "ADSREnvelope.generated.h"
 
 //================================================================================
+/** indicates a specific temporal portion of an ADSR envelope.
+    Idle indicates the envelope is 'at rest' not doing anything.
+*/
 UENUM (BlueprintType)
 enum class EnvelopeState : uint8
 {
@@ -25,12 +28,10 @@ enum class EnvelopeState : uint8
     Release UMETA(DisplayName = "Release")
 };
 //================================================================================
-
-//UCLASS()
-class UADSREnvelope //: public UObject
+/** A very simple ADSR envelope implementation. 
+*/
+class UADSREnvelope
 {	
-	//GENERATED_BODY()
-
 public:
 	UADSREnvelope();
 
@@ -86,18 +87,22 @@ public:
 	void SetAttackRateSeconds  (double rate, double sampleRate);
     void SetDecayRateSeconds   (double rate, double sampleRate);
     void SetReleaseRateSeconds (double rate, double sampleRate);
+	void SetSustainLevel       (double level);
 
-	void SetSustainLevel            (double level);
+	double GetAttackRateSeconds  (double sampleRate);
+    double GetDecayRateSeconds   (double sampleRate);
+    double GetReleaseRateSeconds (double sampleRate);
+	double GetSustainLevel       ();
+
     void SetAttackTargetRatio       (double targetRatio);
     void SetDecayReleaseTargetRatio (double targetRatio);
     void UpdateCoefficientsAndBaseValues();
 
 private:
-    //UPROPERTY(Transient)
 	EnvelopeState EnvState = EnvelopeState::Idle;
 
 	double Output                  = 0.0;
-	double AttackRateSamples       = 4400.0;//rate in samples
+	double AttackRateSamples       = 4400.0;
 	double DecayRateSamples        = 13200.0;
 	double ReleaseRateSamples      = 13200.0;
 	double AttackCoef              = 0.0;

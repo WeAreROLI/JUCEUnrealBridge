@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include "UnrealADSREnvelope.h"
-#include "UnrealWaveVoice.generated.h"
+#include "WaveVoice.generated.h"
 
 //================================================================================
 UENUM (BlueprintType)
@@ -21,12 +20,15 @@ enum class WaveType : uint8
 };
 //================================================================================
 
-class UnrealWaveVoice : public UnrealSynthesiserVoice
+/** A simple custom SynthesiserVoice class that implements 4 different waveform shapes.
+    @see USynthesiserVoice.
+*/
+class UWaveVoice : public USynthesiserVoice
 {
 public:
-	struct UnrealWaveSound : public UnrealSynthesiserSoundDescriptor {};
+	struct UWaveSound : public USynthesiserSoundDescriptor {};
 
-	FORCEINLINE UnrealWaveVoice() : currentAngle (0), angleDelta (0), level (0)
+	FORCEINLINE UWaveVoice() : currentAngle (0), angleDelta (0), level (0)
     {}
 
     FORCEINLINE void SetWaveformType (WaveType w) { WaveformType = w; }
@@ -34,18 +36,16 @@ public:
     FORCEINLINE void SetDecayRateSeconds   (double rate)     { Envelope.SetDecayRateSeconds   (rate, getSampleRate()); }
     FORCEINLINE void SetReleaseRateSeconds (double rate)     { Envelope.SetReleaseRateSeconds (rate, getSampleRate()); }
 	FORCEINLINE void SetSustainLevel       (double susLevel) { Envelope.SetSustainLevel       (susLevel); }
-private:
-    //UPROPERTY(Transient)
-    UADSREnvelope Envelope;
 
-    //UPROPERTY(Transient)
-    WaveType WaveformType = WaveType::Sin;
+private:
+    UADSREnvelope Envelope;
+    WaveType      WaveformType = WaveType::Sin;
 	
     double currentAngle, angleDelta, level;
 
 	FORCEINLINE virtual bool canPlaySound (juce::SynthesiserSound* sound) override
     {
-        return dynamic_cast<UnrealWaveSound*> (sound) != nullptr;
+        return dynamic_cast<UWaveSound*> (sound) != nullptr;
     }
 
 	FORCEINLINE virtual void startNote (int midiNoteNumber, float velocity,

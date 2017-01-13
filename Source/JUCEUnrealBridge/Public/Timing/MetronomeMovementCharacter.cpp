@@ -18,10 +18,3 @@ void AMetronomeMovementCharacter::BeginPlay()
     
     AddOwnedComponent (MetronomeListenerComponent);
 }
-
-void AMetronomeMovementCharacter::EndPlay (const EEndPlayReason::Type endPlayReason)
-{
-    Super::EndPlay (endPlayReason);
-    if (MetronomeComponent != nullptr)
-        DetachFromMetronome (MetronomeComponent);
-}

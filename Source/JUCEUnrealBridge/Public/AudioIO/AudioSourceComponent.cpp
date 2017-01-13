@@ -7,7 +7,12 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "AudioSourceComponent.h"
 
-void UAudioSourceComponent::UAudioSource::releaseResources() {}
+void UAudioSourceComponent::UAudioSource::releaseResources() 
+{
+    if (unrealReleaseResourcesCallback != nullptr)
+        unrealReleaseResourcesCallback();
+}
+
 void UAudioSourceComponent::UAudioSource::prepareToPlay (int newSamplesPerBlockExpected, double newSampleRate) 
 {
     samplesPerBlockExpected = newSamplesPerBlockExpected;
@@ -32,14 +37,33 @@ void UAudioSourceComponent::UAudioSource::setPrepareToPlayCallback (std::functio
     unrealPrepareToPlayCallback = func;
 }
 
+void UAudioSourceComponent::UAudioSource::setReleaseResourcesCallback (std::function<void()> func)
+{
+    unrealReleaseResourcesCallback = func;
+}
+
 double UAudioSourceComponent::UAudioSource::getSampleRate()              { return sampleRate; }
 int    UAudioSourceComponent::UAudioSource::getSamplesPerBlockExpected() { return samplesPerBlockExpected; }
 
 //======================================================================================================
 //======================================================================================================
+
 UAudioSourceComponent::UAudioSourceComponent()
 {
     bWantsInitializeComponent = true;
+}
+
+void UAudioSourceComponent::InitializeComponent()
+{
+    audioSource.setGetNextBufferCallback ([this] (const juce::AudioSourceChannelInfo& bufferToFill)
+    {
+        GetNextAudioBlock (bufferToFill);
+    });
+
+    audioSource.setPrepareToPlayCallback ([this] (int samplesPerBlockExpected, double sampleRate)
+    {
+        PrepareToPlay (samplesPerBlockExpected, sampleRate);
+    });
 }
 
 void UAudioSourceComponent::StartAudio()
@@ -55,6 +79,11 @@ void UAudioSourceComponent::StopAudio()
 void UAudioSourceComponent::OnComponentDestroyed (bool bDestroyingHierarchy) 
 {
     UnregisterAudioSource();
+}
+
+double UAudioSourceComponent::GetSampleRate()
+{
+    return audioSource.getSampleRate();
 }
 
 void UAudioSourceComponent::RegisterAudioSource()
@@ -78,17 +107,3 @@ void UAudioSourceComponent::UnregisterAudioSource()
     }
 }
 
-void UAudioSourceComponent::AssignGetNextAudioBlockCallback (std::function<void (const juce::AudioSourceChannelInfo& bufferToFill)> func)
-{
-    audioSource.setGetNextBufferCallback (func);
-}
-
-void UAudioSourceComponent::AssignPrepareToPlayCallback (std::function<void (int samplesPerBlockExpected, double sampleRate)> func)
-{
-    audioSource.setPrepareToPlayCallback (func);
-}
-
-double UAudioSourceComponent::GetSampleRate()
-{
-    return audioSource.getSampleRate();
-}

@@ -7,59 +7,39 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "MetronomeListenerComponent.h"
 
-void UMetronomeListenerComponent::MetronomeListener::SixteenthTicked (int index) 
+void UMetronomeListenerComponent::MetronomeListener::SixteenthCallback (int index) 
 {
 	if (Owner != nullptr)
     {
-        PendingCallback.set (1);
-        AsyncTask (ENamedThreads::NormalTaskPriority, [this, index] () 
-        {
-            Owner->LastSixteenthTime = Owner->GetWorld()->GetTimeSeconds();
-            Owner->OnSixteenth.Broadcast (index); 
-            PendingCallback.set (0);
-        });
+        Owner->LastSixteenthTime = Owner->GetWorld()->GetTimeSeconds();
+        Owner->OnSixteenth.Broadcast (index); 
     }
 }
 
-void UMetronomeListenerComponent::MetronomeListener::EighthTicked (int index)
+void UMetronomeListenerComponent::MetronomeListener::EighthCallback (int index)
 {
 	if (Owner != nullptr)
     {
-        PendingCallback.set (1);
-		AsyncTask (ENamedThreads::NormalTaskPriority, [this, index] () 
-        { 
-            Owner->LastEighthTime = Owner->GetWorld()->GetTimeSeconds();
-            Owner->OnEighth.Broadcast (index); 
-            PendingCallback.set (0);
-        });
+        Owner->LastEighthTime = Owner->GetWorld()->GetTimeSeconds();
+        Owner->OnEighth.Broadcast (index); 
     }
 }
 
-void UMetronomeListenerComponent::MetronomeListener::BeatTicked (int index)
+void UMetronomeListenerComponent::MetronomeListener::BeatCallback (int index)
 {
 	if (Owner != nullptr)
     {
-        PendingCallback.set (1);
-        AsyncTask (ENamedThreads::NormalTaskPriority, [this, index] () 
-        {
-            Owner->LastBeatTime = Owner->GetWorld()->GetTimeSeconds();
-            Owner->OnBeat.Broadcast (index); 
-            PendingCallback.set (0);
-        });
+        Owner->LastBeatTime = Owner->GetWorld()->GetTimeSeconds();
+        Owner->OnBeat.Broadcast (index); 
     }
 }
 
-void UMetronomeListenerComponent::MetronomeListener::BarTicked (int index)
+void UMetronomeListenerComponent::MetronomeListener::BarCallback (int index)
 {
 	if (Owner != nullptr)
     {
-        PendingCallback.set (1);
-        AsyncTask (ENamedThreads::NormalTaskPriority, [this, index] () 
-        { 
-            Owner->LastBarTime = Owner->GetWorld()->GetTimeSeconds();
-            Owner->OnBar.Broadcast (index); 
-            PendingCallback.set (0);
-        });
+        Owner->LastBarTime = Owner->GetWorld()->GetTimeSeconds();
+        Owner->OnBar.Broadcast (index); 
     }
 }
 

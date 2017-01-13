@@ -12,6 +12,8 @@
 
 
 //================================================================================
+/** Various levels of subdivision for time.
+*/
 UENUM (BlueprintType)
 enum class RhythmicUnitType : uint8
 {
@@ -22,30 +24,53 @@ enum class RhythmicUnitType : uint8
 //================================================================================
 //================================================================================
 
+/** A time-keeping component that can be added to an Actor.
+*/
 UCLASS(meta=(BlueprintSpawnableComponent), ClassGroup="JUCE-Components")
 class JUCEUNREALBRIDGE_API UMetronomeComponent : public UTimeTickerComponent
 {
 	GENERATED_BODY()
 
 public:
+    /** UMetronomeComponent::Listener objects can register with a metronome component
+        and respond to rhythmic subdivision events.
+
+        Listener callbacks are offloaded from the audio thread onto a different thread
+        to avoid audio dropout.
+    */
     class Listener
     {
     public:
+        friend class UMetronomeComponent;
+
         Listener() { PendingCallback.set (false); }
 
-        virtual void SixteenthTicked (int index) {}
-        virtual void EighthTicked    (int index) {}
-        virtual void BeatTicked      (int index) {}
-        virtual void BarTicked       (int index) {}
+        virtual void SixteenthCallback (int index) {}
+        virtual void EighthCallback    (int index) {}
+        virtual void BeatCallback      (int index) {}
+        virtual void BarCallback       (int index) {}
+
+        bool HasPendingCallback() { return PendingCallback.get() == 1; }
+
+    private:
         juce::Atomic<int> PendingCallback;
+
+        void SixteenthTicked (int index);
+        void EighthTicked    (int index);
+        void BeatTicked      (int index);
+        void BarTicked       (int index);
     };
 
     void AddListener      (Listener* listener) { Listeners.add    (listener); }
     void RemoveListener   (Listener* listener) { Listeners.remove (listener); }
     bool ContainsListener (Listener* listener) { return Listeners.contains (listener); }
+
 private:
     juce::ListenerList<Listener> Listeners;
 
+    /** The RhythmicUnit srtucture represents a particular rhythmic subdivision
+        that can be 'ticked' over time.
+    */
     struct RhythmicUnit
     {
         RhythmicUnit() 
@@ -67,8 +92,22 @@ private:
 
         std::function<void (int index)> TickCallback;
         int CurrentIndex;
+
+        /** Indicates the number of RhythmicUnit subdivisions that make up the level above.
+        */
         int NumSubdivisions;
     };
+
+    template<typename R>
+    FORCEINLINE void TickRhythmicUnit (R& unit) { unit.Tick(); }
+
+    template<typename R, typename... Args>
+    FORCEINLINE void TickRhythmicUnit (R& unit, Args&... args) 
+    {
+        unit.Tick();
+        if (unit.GetModuloTickIndex() == 0)
+            TickRhythmicUnit (args...);
+    }
 
 public:
 	void BeginPlay() override;
@@ -91,6 +130,9 @@ public:
         WaitForMetronomeCallbacksToComplete();
     }
 
+    /** Wait for all registered UMetronomeComponent::Listener objects
+        to complete any callbacks they have pending.
+    */
     UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
     void WaitForMetronomeCallbacksToComplete()
     {
@@ -100,7 +142,7 @@ public:
     FORCEINLINE bool HasListenerPendingCallback() 
     {
         for (auto listener : Listeners.getListeners())
-            if (listener->PendingCallback.get() == 1)
+            if (listener->HasPendingCallback())
                 return true;
         return false;
     }
@@ -150,7 +192,6 @@ public:
         return GetTickTime() * 4.0f;
     }
 
-
 private:
     bool MetronomeRunning = false;
 	int  Numerator        = 4;
@@ -187,14 +228,5 @@ private:
         }
     }
 
-    template<typename R>
-    FORCEINLINE void TickRhythmicUnit (R& unit) { unit.Tick(); }
-
-    template<typename R, typename... Args>
-    FORCEINLINE void TickRhythmicUnit (R& unit, Args&... args) 
-    {
-        unit.Tick();
-        if (unit.GetModuloTickIndex() == 0)
-            TickRhythmicUnit (args...);
-    }
+    
 };

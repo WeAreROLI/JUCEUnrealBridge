@@ -9,7 +9,7 @@
 */
 
 #include "JUCEUnrealBridgePCH.h"
-#include "UnrealADSREnvelope.h"
+#include "ADSREnvelope.h"
 
 UADSREnvelope::UADSREnvelope()
 {
@@ -56,6 +56,29 @@ void UADSREnvelope::SetSustainLevel (double level)
 {
 	SustainLevel = level;
 	DecayBase = (SustainLevel - DecayReleaseTargetRatio) * (1.0 - DecayCoef);
+}
+
+double UADSREnvelope::GetAttackRateSeconds (double sampleRate)
+{
+	check (sampleRate != 0.0);
+    return AttackRateSamples / sampleRate;
+}
+
+double UADSREnvelope::GetDecayRateSeconds (double sampleRate)
+{
+	check (sampleRate != 0.0);
+	return DecayRateSamples / sampleRate;
+}
+
+double UADSREnvelope::GetReleaseRateSeconds (double sampleRate)
+{
+	check (sampleRate != 0.0);
+	return ReleaseRateSamples / sampleRate;
+}
+
+double UADSREnvelope::GetSustainLevel()
+{
+	return SustainLevel;
 }
 
 void UADSREnvelope::SetAttackTargetRatio (double targetRatio)

@@ -10,12 +10,12 @@
     A synthesiser can contain one or more sounds, and a sound can choose which
     midi notes and channels can trigger it.
 
-    The UnrealSynthesiserSoundDescriptor is a passive class that just describes what 
+    The USynthesiserSoundDescriptor is a passive class that just describes what 
     the sound is - the actual audio rendering for a sound is done by a 
     SynthesiserVoice. This allows more than one SynthesiserVoice to play the same 
     sound at the same time.
  
- 	UnrealSynthesiserSoundDescriptor objects are not intended to be spawnable objects
+ 	USynthesiserSoundDescriptor objects are not intended to be spawnable objects
  	within the game world. They are reference-counted and deleted by the synthesiser 
  	when no longer in use. 
 
@@ -24,15 +24,15 @@
 
 #pragma once
 
-class UnrealSynthesiserSoundDescriptor : public juce::SynthesiserSound
+class USynthesiserSoundDescriptor : public juce::SynthesiserSound
 {
 protected:
     //==============================================================================
-    FORCEINLINE UnrealSynthesiserSoundDescriptor() {}
+    FORCEINLINE USynthesiserSoundDescriptor() {}
 
 public:
     /** Destructor. */
-    FORCEINLINE virtual ~UnrealSynthesiserSoundDescriptor() {}
+    FORCEINLINE virtual ~USynthesiserSoundDescriptor() {}
 
     //==============================================================================
     /** Returns true if this sound should be played when a given midi note is pressed.
@@ -60,24 +60,24 @@ public:
     A voice plays a single sound at a time, and a synthesiser holds an array of
     voices so that it can play polyphonically.
 
-	UnrealSynthesiserVoice objects are not intended to be spawnable objects
+	USynthesiserVoice objects are not intended to be spawnable objects
  	within the game world. In general they should be instantiated when adding
  	them to a synthesiser, which will take ownership and delete them when no
  	longer needed.
 
     @see Synthesiser, SynthesiserSound
 */
-class UnrealSynthesiserVoice : public juce::SynthesiserVoice
+class USynthesiserVoice : public juce::SynthesiserVoice
 {
 public:
     /**
-    The default UnrealSynthesiserVoice plays default UnrealSynthesiserSoundDescriptor sound types. For more 
-    complex synth setups, custom UnrealSynthesiserSoundDescriptor types can be defined. Custom synthesiser 
+    The default USynthesiserVoice plays default USynthesiserSoundDescriptor sound types. For more 
+    complex synth setups, custom USynthesiserSoundDescriptor types can be defined. Custom synthesiser 
     voice classes would then check the sound descriptor type in this function. 
     */
     FORCEINLINE virtual bool canPlaySound (juce::SynthesiserSound* sound) override
     {
-        return dynamic_cast<UnrealSynthesiserSoundDescriptor*> (sound) != nullptr;
+        return dynamic_cast<USynthesiserSoundDescriptor*> (sound) != nullptr;
     }
 
     FORCEINLINE virtual void pitchWheelMoved (int /*newValue*/) override

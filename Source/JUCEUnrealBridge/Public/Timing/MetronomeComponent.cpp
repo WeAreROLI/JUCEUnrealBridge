@@ -6,6 +6,47 @@
 
 #include "JUCEUnrealBridgePCH.h"
 #include "MetronomeComponent.h"
+
+void UMetronomeComponent::Listener::SixteenthTicked (int index)
+{
+    PendingCallback.set (1);
+    AsyncTask (ENamedThreads::NormalTaskPriority, [this, index] () 
+    {
+        SixteenthCallback (index);
+        PendingCallback.set (0);
+    });
+}
+
+void UMetronomeComponent::Listener::EighthTicked (int index)
+{
+    PendingCallback.set (1);
+    AsyncTask (ENamedThreads::NormalTaskPriority, [this, index] () 
+    {
+        EighthCallback (index);
+        PendingCallback.set (0);
+    });
+}
+
+void UMetronomeComponent::Listener::BeatTicked (int index)
+{
+    PendingCallback.set (1);
+    AsyncTask (ENamedThreads::NormalTaskPriority, [this, index] () 
+    {
+        BeatCallback (index);
+        PendingCallback.set (0);
+    });
+}
+
+void UMetronomeComponent::Listener::BarTicked (int index)
+{
+    PendingCallback.set (1);
+    AsyncTask (ENamedThreads::NormalTaskPriority, [this, index] () 
+    {
+        BarCallback (index);
+        PendingCallback.set (0);
+    });
+}
+
 void UMetronomeComponent::BeginPlay()
 {
     UpdateSubdivisions();

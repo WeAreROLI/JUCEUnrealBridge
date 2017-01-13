@@ -7,9 +7,66 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "AudioCallbackComponent.h"
 
+void UAudioCallbackComponent::UAudioDeviceCallback::setAudioDeviceAboutToStartCallback (std::function<void (juce::AudioIODevice *device)> func)
+{
+    unrealAudioDeviceAboutToStartCallback = func;
+}
+
+void UAudioCallbackComponent::UAudioDeviceCallback::setAudioDeviceStoppedCallback (std::function<void()> func)
+{
+    unrealAudioDeviceStoppedCallback = func;
+}
+
+void UAudioCallbackComponent::UAudioDeviceCallback::setAudioDeviceIOCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
+	    						                                              float **outputChannelData, int numOutputChannels, int numSamples)> func)
+{
+    unrealAudioDeviceIOCallback = func;
+}
+
+void UAudioCallbackComponent::UAudioDeviceCallback::audioDeviceIOCallback (const float **inputChannelData, int numInputChannels, 
+	    						                                           float **outputChannelData, int numOutputChannels, int numSamples)
+{
+    if (unrealAudioDeviceIOCallback != nullptr)
+        unrealAudioDeviceIOCallback (inputChannelData, numInputChannels, outputChannelData, numOutputChannels, numSamples);
+}
+
+void UAudioCallbackComponent::UAudioDeviceCallback::audioDeviceAboutToStart (juce::AudioIODevice *device) 
+{
+    if (unrealAudioDeviceAboutToStartCallback != nullptr)
+        unrealAudioDeviceAboutToStartCallback (device);
+}
+
+void UAudioCallbackComponent::UAudioDeviceCallback::audioDeviceStopped() 
+{
+    if (unrealAudioDeviceStoppedCallback != nullptr)
+        unrealAudioDeviceStoppedCallback();
+}
+
+//======================================================================================================
+//======================================================================================================
+
 UAudioCallbackComponent::UAudioCallbackComponent()
 {
     bWantsInitializeComponent = true;
+}
+
+void UAudioCallbackComponent::InitializeComponent()
+{
+    deviceCallback.setAudioDeviceIOCallback ([this] (const float **inputChannelData, int numInputChannels, 
+                                                     float **outputChannelData, int numOutputChannels, int numSamples)
+    {
+        AudioDeviceIOCallback (inputChannelData, numInputChannels, outputChannelData, numOutputChannels, numSamples);
+    });
+
+    deviceCallback.setAudioDeviceAboutToStartCallback ([this] (juce::AudioIODevice *device)
+    {
+        AudioDeviceAboutToStart (device);
+    });
+
+    deviceCallback.setAudioDeviceStoppedCallback ([this] ()
+    {
+        AudioDeviceStopped();
+    });
 }
 
 void UAudioCallbackComponent::StartAudio()
@@ -47,24 +104,4 @@ double UAudioCallbackComponent::GetSampleRate()
     return setup.sampleRate;
 }
 
-void UAudioCallbackComponent::UAudioDeviceCallback::setAudioDeviceIOCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
-	    						                                              float **outputChannelData, int numOutputChannels, int numSamples)> func)
-{
-    UnrealAudioDeviceIOCallback = func;
-}
 
-void UAudioCallbackComponent::UAudioDeviceCallback::audioDeviceIOCallback (const float **inputChannelData, int numInputChannels, 
-	    						                                           float **outputChannelData, int numOutputChannels, int numSamples)
-{
-    if (UnrealAudioDeviceIOCallback != nullptr)
-        UnrealAudioDeviceIOCallback (inputChannelData, numInputChannels, outputChannelData, numOutputChannels, numSamples);
-}
-
-void UAudioCallbackComponent::UAudioDeviceCallback::audioDeviceAboutToStart (juce::AudioIODevice *device) {}
-void UAudioCallbackComponent::UAudioDeviceCallback::audioDeviceStopped() {}
-
-void UAudioCallbackComponent::AssignAudioCallback (std::function<void (const float **inputChannelData, int numInputChannels, 
-	    						                                       float **outputChannelData, int numOutputChannels, int numSamples)> func)
-{
-    deviceCallback.setAudioDeviceIOCallback (func);
-}
