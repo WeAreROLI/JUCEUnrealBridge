@@ -42,6 +42,12 @@ public:
         Synth.addSound (new UWaveVoice::UWaveSound());
         
         StartAudio();
+
+        SetWaveformType       (InitialWaveType);
+        SetAttackRateSeconds  (InitialAttackRateSeconds);
+        SetDecayRateSeconds   (InitialDecayRateSeconds);
+        SetSustainLevel       (InitialSustainLevel);
+        SetReleaseRateSeconds (InitialReleaseRateSeconds);
     }
 
     /** We continuously schedule any required note off events for UNoteEventInfo note events that have been started.
@@ -56,6 +62,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void SetWaveformType (WaveType w)
     {
+        CurrentWaveType = w;
         for (int i = 0; i < Synth.getNumVoices(); ++i)
         {
             UWaveVoice* voice = (UWaveVoice*) Synth.getVoice (i);
@@ -68,6 +75,7 @@ public:
     void SetAttackRateSeconds (float rate) 
     {
         rate = CheckRate (rate);
+        CurrentAttackRateSeconds = rate;
         for (int i = 0; i < Synth.getNumVoices(); ++i)
         {
             UWaveVoice* voice = (UWaveVoice*) Synth.getVoice (i);
@@ -80,6 +88,7 @@ public:
     void SetDecayRateSeconds (float rate) 
     {
         rate = CheckRate (rate);
+        CurrentDecayRateSeconds = rate;
         for (int i = 0; i < Synth.getNumVoices(); ++i)
         {
             UWaveVoice* voice = (UWaveVoice*) Synth.getVoice (i);
@@ -92,6 +101,7 @@ public:
     void SetReleaseRateSeconds (float rate) 
     {
         rate = CheckRate (rate);
+        CurrentReleaseRateSeconds = rate;
         for (int i = 0; i < Synth.getNumVoices(); ++i)
         {
             UWaveVoice* voice = (UWaveVoice*) Synth.getVoice (i);
@@ -103,6 +113,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
     void SetSustainLevel (float level)
     {
+        CurrentSustainLevel = level;
         for (int i = 0; i < Synth.getNumVoices(); ++i)
         {
             UWaveVoice* voice = (UWaveVoice*) Synth.getVoice (i);
@@ -110,6 +121,21 @@ public:
                 voice->SetSustainLevel ((double) level);
         }
     }
+
+    UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
+    WaveType GetWaveformType() { return CurrentWaveType; }
+
+    UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
+    float GetAttackRateSeconds() { return CurrentAttackRateSeconds; }
+
+    UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
+    float GetDecayRateSeconds() { return CurrentDecayRateSeconds; }
+
+    UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
+    float GetReleaseRateSeconds() { return CurrentReleaseRateSeconds; }
+
+    UFUNCTION(BlueprintCallable, Category = "JUCE-Synthesiser")
+    float GetSustainLevel() { return CurrentSustainLevel; }
 
     /** This function can be used to play a note of a given length (in milliseconds).
         @see UNoteEventInfo, UNoteEvenPlayer.
@@ -154,6 +180,18 @@ public:
             UE_LOG(LogTemp, Warning, TEXT("Attempted to play notes using an uninitialized synthesiser component. Make sure you call StartAudio() before using the synthesiser (for example during BeginPlay())"));
         }
     }
+
+    UPROPERTY(EditAnywhere, Category="JUCE-Synthesiser")
+    WaveType InitialWaveType = WaveType::Sin;
+    UPROPERTY(EditAnywhere, Category="JUCE-Synthesiser")
+    float InitialAttackRateSeconds  = 0.01f;
+    UPROPERTY(EditAnywhere, Category="JUCE-Synthesiser")
+	float InitialDecayRateSeconds   = 0.1f;
+    UPROPERTY(EditAnywhere, Category="JUCE-Synthesiser")
+	float InitialSustainLevel       = 0.8f;
+    UPROPERTY(EditAnywhere, Category="JUCE-Synthesiser")
+	float InitialReleaseRateSeconds = 0.1f;
+
 protected:
     FORCEINLINE virtual void PrepareToPlay (int /*samplesPerBlockExpected*/, double sampleRate) override
     {
@@ -193,6 +231,13 @@ public:
 private:
     bool  Initialised         = false;
     float MinimumEnvelopeRate = 0.0001f;
+
+    WaveType CurrentWaveType           = WaveType::Sin;
+    float    CurrentAttackRateSeconds  = 0.01f;
+	float    CurrentDecayRateSeconds   = 0.1f;
+	float    CurrentSustainLevel       = 0.8f;
+	float    CurrentReleaseRateSeconds = 0.1f;
+
     float CheckRate (float rate)
     {
         if (rate <= 0.0f)
