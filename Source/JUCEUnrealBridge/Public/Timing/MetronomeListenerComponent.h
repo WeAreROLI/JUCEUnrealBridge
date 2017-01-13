@@ -31,6 +31,7 @@ public:
 	UMetronomeListenerComponent()
 	{
 		Listener.SetOwner (this);
+        PrimaryComponentTick.bCanEverTick = true;
 	}
 
     void OnComponentDestroyed (bool bDestroyingHierarchy) override
@@ -38,6 +39,11 @@ public:
         Listener.SetOwner (nullptr);
         if (MetronomeComponent != nullptr)
             DetachFromMetronome();
+    }
+
+    FORCEINLINE virtual void TickComponent (float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override
+    {
+        Listener.Tick();
     }
 
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeListener")

@@ -43,22 +43,43 @@ public:
     public:
         friend class UMetronomeComponent;
 
-        Listener() { PendingCallback.set (false); }
+        Listener() 
+        { 
+            PendingCallback.set    (0); 
+            NextSixteenthIndex.set (-1);
+            NextEighthIndex.set    (-1);
+            NextBeatIndex.set      (-1);
+            NextBarIndex.set       (-1);
+        }
 
         virtual void SixteenthCallback (int index) {}
         virtual void EighthCallback    (int index) {}
         virtual void BeatCallback      (int index) {}
         virtual void BarCallback       (int index) {}
 
+        /** Inheriting classes should call this continuously.
+        */
+        void Tick();
+
         bool HasPendingCallback() { return PendingCallback.get() == 1; }
 
     private:
         juce::Atomic<int> PendingCallback;
 
+        juce::Atomic<int> NextSixteenthIndex;
+        juce::Atomic<int> NextEighthIndex;
+        juce::Atomic<int> NextBeatIndex;
+        juce::Atomic<int> NextBarIndex;
+
         void SixteenthTicked (int index);
         void EighthTicked    (int index);
         void BeatTicked      (int index);
         void BarTicked       (int index);
+
+        void ScheduleSixteenthCallbackIfNeeded();
+        void ScheduleEighthCallbackIfNeeded();
+        void ScheduleBeatCallbackIfNeeded();
+        void ScheduleBarCallbackIfNeeded();
     };
 
     void AddListener      (Listener* listener) { Listeners.add    (listener); }
