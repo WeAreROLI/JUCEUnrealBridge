@@ -36,7 +36,7 @@ public:
             if (ActorHasReachedTarget())
             {
                 if (CorrectMovementError)
-                    SetActorLocation (RhythmicMoveTargetPosition);
+                    SetActorLocation (RhythmicMoveTargetPosition, true);
                 ShouldMoveTowardsTarget              = false;
                 CurrentRhythmicMoveInterpTimeSeconds = 0.0f;
                 CurrentRhythmicMovementLengthSeconds = 0.0f;
@@ -49,9 +49,9 @@ public:
                     t = FMath::LogX (10.0f, t * 9.0f + 1.0f);
                 FVector newActorPosition = FMath::Lerp (RhythmicMoveStartPosition, RhythmicMoveTargetPosition, t);
                 if (RhythmicMovementShouldIgnoreZ)
-                    SetActorLocation (FVector (newActorPosition.X, newActorPosition.Y, GetActorLocation().Z));
+                    SetActorLocation (FVector (newActorPosition.X, newActorPosition.Y, GetActorLocation().Z), true);
                 else
-                    SetActorLocation (newActorPosition);
+                    SetActorLocation (newActorPosition, true);
             }
         }
         else
@@ -68,6 +68,7 @@ public:
 	{
         if (MetronomeListenerComponent != nullptr)
 		    MetronomeListenerComponent->RegisterWithMetronome (metronome);
+        UpdateJumpTime();
 	}
 
     /** Causes the character to move continuously in the given direction (normalised)
@@ -90,14 +91,15 @@ public:
         a given number (numRhythmicUnits) of specific rhythmic subdivisions
         (rhythmicUnit). 
 
-        For example if you want the characters jump to last 1 beat you can 
+        For example if you want the character's jump to last 1 beat you can 
         call SetJumpTimeInRhythmicUnits (RhythmicUnitType::Beat, 1);
     */
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeMovement")
 	void SetJumpTimeInRhythmicUnits (RhythmicUnitType rhythmicUnit, int numRhythmicUnits)
 	{
-        float jumpTime = GetRhythmicUnitMovementTimeSeconds (rhythmicUnit) * numRhythmicUnits;
-        GetCharacterMovement()->JumpZVelocity = -GetCharacterMovement()->GetGravityZ() * jumpTime * 0.5f;
+        JumpTimeRhythmicUnits = rhythmicUnit;
+        JumpTimeNumberUnits   = numRhythmicUnits;
+        UpdateJumpTime();
 	}
 
     /** This is called during the Tick function in order to move the character
@@ -107,7 +109,7 @@ public:
 	void MetronomicMove (float DeltaSeconds)
 	{
         float velocityMag = 1.0f / (Get16thMovementTimeSeconds());
-		SetActorLocation (GetActorLocation() + MetronomicVelocity * velocityMag * DeltaSeconds);
+		SetActorLocation (GetActorLocation() + MetronomicVelocity * velocityMag * DeltaSeconds, true);
 	}
 
     /** Causes the character to move to a given target location in the time taken 
@@ -198,6 +200,9 @@ private:
     FVector RhythmicMoveStartPosition  = FVector (0.0f, 0.0f, 0.0f);
     FVector RhythmicMoveTargetPosition = FVector (0.0f, 0.0f, 0.0f);
 
+    RhythmicUnitType JumpTimeRhythmicUnits = RhythmicUnitType::Beat;
+    int              JumpTimeNumberUnits   = 1;
+
     float CurrentRhythmicMoveInterpTimeSeconds = 0.0f;
     float CurrentRhythmicMovementLengthSeconds = 0.0f;
     
@@ -220,5 +225,11 @@ private:
         if (GetRegisteredMetronomeComponent() != nullptr)
             return GetRegisteredMetronomeComponent()->GetSecondsPerRhythmicUnit (type) * RhythmicUnitMovementProportion;
         return 1.0f;
+    }
+
+    void UpdateJumpTime()
+    {
+        float jumpTime = GetRhythmicUnitMovementTimeSeconds (JumpTimeRhythmicUnits) * JumpTimeNumberUnits;
+        GetCharacterMovement()->JumpZVelocity = -GetCharacterMovement()->GetGravityZ() * jumpTime * 0.5f;
     }
 };
