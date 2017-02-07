@@ -9,102 +9,122 @@
 
 void UMetronomeComponent::Listener::SixteenthTicked (int index) 
 { 
-    NextSixteenthIndex.set (index);
     SixteenthCallback (index);
 }
 
 void UMetronomeComponent::Listener::EighthTicked (int index)    
 { 
-    NextEighthIndex.set (index); 
     EighthCallback (index);
 }
 
 void UMetronomeComponent::Listener::BeatTicked (int index)      
 { 
-    NextBeatIndex.set (index);
     BeatCallback (index);
 }
 
 void UMetronomeComponent::Listener::BarTicked (int index)       
 { 
-    NextBarIndex.set (index);
     BarCallback (index);
 }
 
-void UMetronomeComponent::Listener::ScheduleAsyncSixteenthCallbackIfNeeded()
+void UMetronomeComponent::AddListener (Listener* listener) 
+{
+    /** Wait for listener callbacks to complete before modifying listener list. */
+    while (IsPendingCallback()){}
+    Listeners.add (listener); 
+}
+
+void UMetronomeComponent::RemoveListener (Listener* listener) 
+{ 
+    /** Wait for listener callbacks to complete before modifying listener list. */
+    while (IsPendingCallback()){}
+    Listeners.remove (listener); 
+}
+
+bool UMetronomeComponent::ContainsListener (Listener* listener) 
+{ 
+    /** Wait for listener callbacks to complete before accessing listener list. */
+    while (IsPendingCallback()){}
+    return Listeners.contains (listener); 
+}
+
+void UMetronomeComponent::ScheduleAsyncSixteenthCallbackIfNeeded()
 {
     int sixteenthIndex = NextSixteenthIndex.get();
     if (sixteenthIndex != -1)
     {
-        PendingCallback.set (1);
+        SixteenthCallbackPending.set (1);
         AsyncTask (ENamedThreads::NormalTaskPriority, [this, sixteenthIndex] () 
         {
-            AsyncSixteenthCallback (sixteenthIndex);
-            PendingCallback.set (0);
+            Listeners.call (&Listener::SixteenthTicked, sixteenthIndex);
+            SixteenthCallbackPending.set (0);
         });
-        NextSixteenthIndex.set (-1);
+        NextSixteenthIndex.set(-1);
     }
 }
 
-void UMetronomeComponent::Listener::ScheduleAsyncEighthCallbackIfNeeded()
+void UMetronomeComponent::ScheduleAsyncEighthCallbackIfNeeded()
 {
     int eighthIndex = NextEighthIndex.get();
     if (eighthIndex != -1)
     {
-        PendingCallback.set (1);
+        EighthCallbackPending.set (1);
         AsyncTask (ENamedThreads::NormalTaskPriority, [this, eighthIndex] () 
         {
-            AsyncEighthCallback (eighthIndex);
-            PendingCallback.set (0);
+            Listeners.call (&Listener::EighthTicked, eighthIndex);
+            EighthCallbackPending.set (0);
         });
-        NextEighthIndex.set (-1);
+        NextEighthIndex.set(-1);
     }
 }
-void UMetronomeComponent::Listener::ScheduleAsyncBeatCallbackIfNeeded()
+
+void UMetronomeComponent::ScheduleAsyncBeatCallbackIfNeeded()
 {
     int beatIndex = NextBeatIndex.get();
     if (beatIndex != -1)
     {
-        PendingCallback.set (1);
+        BeatCallbackPending.set (1);
         AsyncTask (ENamedThreads::NormalTaskPriority, [this, beatIndex] () 
         {
-            AsyncBeatCallback (beatIndex);
-            PendingCallback.set (0);
+            Listeners.call (&Listener::BeatTicked, beatIndex);
+            BeatCallbackPending.set (0);
         });
-        NextBeatIndex.set (-1);
+        NextBeatIndex.set(-1);
     }
 }
 
-void UMetronomeComponent::Listener::ScheduleAsyncBarCallbackIfNeeded()
+void UMetronomeComponent::ScheduleAsyncBarCallbackIfNeeded()
 {
     int barIndex = NextBarIndex.get();
     if (barIndex != -1)
     {
-        PendingCallback.set (1);
+        BarCallbackPending.set (1);
         AsyncTask (ENamedThreads::NormalTaskPriority, [this, barIndex] () 
         {
-            AsyncBarCallback (barIndex);
-            PendingCallback.set (0);
+            Listeners.call (&Listener::BarTicked, barIndex);
+            BarCallbackPending.set (0);
         });
-        NextBarIndex.set (-1);
+        NextBarIndex.set(-1);
     }
-}
-
-void UMetronomeComponent::Listener::Tick()
-{
-    ScheduleAsyncSixteenthCallbackIfNeeded();
-    ScheduleAsyncEighthCallbackIfNeeded();
-    ScheduleAsyncBeatCallbackIfNeeded();
-    ScheduleAsyncBarCallbackIfNeeded();
 }
 
 void UMetronomeComponent::BeginPlay()
 {
     UpdateSubdivisions();
-	Sixteenth.TickCallback = [this](int index){ Listeners.call (&Listener::SixteenthTicked, index); };
-	Eighth.TickCallback    = [this](int index){ Listeners.call (&Listener::EighthTicked,    index); };
-	Beat.TickCallback      = [this](int index){ Listeners.call (&Listener::BeatTicked,      index); };
-	Bar.TickCallback       = [this](int index){ Listeners.call (&Listener::BarTicked,       index); };
+    NextSixteenthIndex.set (-1);
+    NextEighthIndex.set    (-1);
+    NextBeatIndex.set      (-1);
+    NextBarIndex.set       (-1);
+
+    SixteenthCallbackPending.set (0);
+    EighthCallbackPending.set    (0);
+    BeatCallbackPending.set      (0);
+    BarCallbackPending.set       (0);
+
+	Sixteenth.TickCallback = [this](int index){ NextSixteenthIndex.set (index); };
+	Eighth.TickCallback    = [this](int index){ NextEighthIndex.set    (index); };
+	Beat.TickCallback      = [this](int index){ NextBeatIndex.set      (index); };
+	Bar.TickCallback       = [this](int index){ NextBarIndex.set       (index); };
 
     SetTickCallback ([this]()
     {

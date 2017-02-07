@@ -7,7 +7,7 @@
 #include "JUCEUnrealBridgePCH.h"
 #include "MetronomeListenerComponent.h"
 
-void UMetronomeListenerComponent::MetronomeListener::AsyncSixteenthCallback (int index) 
+void UMetronomeListenerComponent::MetronomeListener::SixteenthCallback (int index) 
 {
 	if (Owner != nullptr)
     {
@@ -16,7 +16,7 @@ void UMetronomeListenerComponent::MetronomeListener::AsyncSixteenthCallback (int
     }
 }
 
-void UMetronomeListenerComponent::MetronomeListener::AsyncEighthCallback (int index)
+void UMetronomeListenerComponent::MetronomeListener::EighthCallback (int index)
 {
 	if (Owner != nullptr)
     {
@@ -25,7 +25,7 @@ void UMetronomeListenerComponent::MetronomeListener::AsyncEighthCallback (int in
     }
 }
 
-void UMetronomeListenerComponent::MetronomeListener::AsyncBeatCallback (int index)
+void UMetronomeListenerComponent::MetronomeListener::BeatCallback (int index)
 {
 	if (Owner != nullptr)
     {
@@ -34,7 +34,7 @@ void UMetronomeListenerComponent::MetronomeListener::AsyncBeatCallback (int inde
     }
 }
 
-void UMetronomeListenerComponent::MetronomeListener::AsyncBarCallback (int index)
+void UMetronomeListenerComponent::MetronomeListener::BarCallback (int index)
 {
 	if (Owner != nullptr)
     {

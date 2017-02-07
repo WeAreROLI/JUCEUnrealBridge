@@ -41,11 +41,6 @@ public:
             DetachFromMetronome();
     }
 
-    FORCEINLINE virtual void TickComponent (float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override
-    {
-        Listener.Tick();
-    }
-
 	UFUNCTION(BlueprintCallable, Category="JUCE-MetronomeListener")
 	void RegisterWithMetronome (UMetronomeComponent* metronome)
 	{
@@ -101,10 +96,10 @@ private:
 	public:
 		void SetOwner (UMetronomeListenerComponent* owner) { Owner = owner; }
 
-		virtual void AsyncSixteenthCallback (int index) override;
-        virtual void AsyncEighthCallback    (int index) override;
-        virtual void AsyncBeatCallback      (int index) override;
-        virtual void AsyncBarCallback       (int index) override;
+		virtual void SixteenthCallback (int index) override;
+        virtual void EighthCallback    (int index) override;
+        virtual void BeatCallback      (int index) override;
+        virtual void BarCallback       (int index) override;
 
 	private:
 		UMetronomeListenerComponent* Owner;

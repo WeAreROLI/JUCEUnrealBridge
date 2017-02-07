@@ -27,7 +27,7 @@ public:
     void AudioDeviceIOCallback (const float **inputChannelData, int numInputChannels, 
 	    				        float **outputChannelData, int numOutputChannels, int numSamples) override;
     
-    void SetTickCallback (std::function<void()> func);
+    
 
     UFUNCTION (BlueprintCallable, Category = "JUCE-TimeTicker")
     void SetTickTime (float NewTickTimeSeconds);
@@ -35,6 +35,9 @@ public:
     float GetTickTime();
 
     void InitializeComponent() override;
+
+protected:
+    void SetTickCallback (std::function<void()> func);
 
 private:
     double TickTimeSeconds     = 0.125;

@@ -35,8 +35,8 @@ public:
     /** UMetronomeComponent::Listener objects can register with a metronome component
         and respond to rhythmic subdivision events.
 
-        Listener callbacks are offloaded from the audio thread onto a different thread
-        to avoid audio dropout.
+        Listener callbacks are called offloaded from the audio thread to a different thread
+        in the MetronomeComponent (see below).
     */
     class Listener
     {
@@ -44,58 +44,23 @@ public:
         friend class UMetronomeComponent;
 
         Listener() 
-        { 
-            PendingCallback.set    (0); 
-            NextSixteenthIndex.set (-1);
-            NextEighthIndex.set    (-1);
-            NextBeatIndex.set      (-1);
-            NextBarIndex.set       (-1);
-        }
+        {}
 
-        /** Async callbacks should be used for heavy-weight tasks 
-            (such as spawning / destroying game objects)
-        */
-        virtual void AsyncSixteenthCallback (int index) {}
-        virtual void AsyncEighthCallback    (int index) {}
-        virtual void AsyncBeatCallback      (int index) {}
-        virtual void AsyncBarCallback       (int index) {}
-
-        /** Synchronous callbacks should be reserved for very light-
-            weight processing.
-        */
         virtual void SixteenthCallback (int index) {}
         virtual void EighthCallback    (int index) {}
         virtual void BeatCallback      (int index) {}
         virtual void BarCallback       (int index) {}
 
-        /** Inheriting classes should call this continuously.
-        */
-        void Tick();
-
-        bool HasPendingCallback() { return PendingCallback.get() == 1; }
-
     private:
-        juce::Atomic<int> PendingCallback;
-
-        juce::Atomic<int> NextSixteenthIndex;
-        juce::Atomic<int> NextEighthIndex;
-        juce::Atomic<int> NextBeatIndex;
-        juce::Atomic<int> NextBarIndex;
-
         void SixteenthTicked (int index);
         void EighthTicked    (int index);
         void BeatTicked      (int index);
         void BarTicked       (int index);
-
-        void ScheduleAsyncSixteenthCallbackIfNeeded();
-        void ScheduleAsyncEighthCallbackIfNeeded();
-        void ScheduleAsyncBeatCallbackIfNeeded();
-        void ScheduleAsyncBarCallbackIfNeeded();
     };
 
-    void AddListener      (Listener* listener) { Listeners.add    (listener); }
-    void RemoveListener   (Listener* listener) { Listeners.remove (listener); }
-    bool ContainsListener (Listener* listener) { return Listeners.contains (listener); }
+    void AddListener      (Listener* listener);
+    void RemoveListener   (Listener* listener);
+    bool ContainsListener (Listener* listener);
 
 private:
     juce::ListenerList<Listener> Listeners;
@@ -142,11 +107,37 @@ private:
     }
 
 public:
+    UMetronomeComponent()
+    {
+        NextSixteenthIndex.set (-1);
+        NextEighthIndex.set    (-1);
+        NextBeatIndex.set      (-1);
+        NextBarIndex.set       (-1);
+
+        SixteenthCallbackPending.set (0);
+        EighthCallbackPending.set    (0);
+        BeatCallbackPending.set      (0);
+        BarCallbackPending.set       (0);
+        
+        PrimaryComponentTick.bCanEverTick = true;
+    }
+
 	void BeginPlay() override;
+
     FORCEINLINE void OnComponentDestroyed (bool bDestroyingHierarchy) override
     {
         Super::OnComponentDestroyed (bDestroyingHierarchy);
         StopMetronome();
+    }
+
+    /** We continuously schedule any required callback events
+    */
+    FORCEINLINE void TickComponent (float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override
+    {
+        ScheduleAsyncSixteenthCallbackIfNeeded();
+        ScheduleAsyncEighthCallbackIfNeeded();
+        ScheduleAsyncBeatCallbackIfNeeded();
+        ScheduleAsyncBarCallbackIfNeeded();
     }
 
     UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
@@ -162,21 +153,12 @@ public:
         WaitForMetronomeCallbacksToComplete();
     }
 
-    /** Wait for all registered UMetronomeComponent::Listener objects
-        to complete any callbacks they have pending.
+    /** Wait for all callbacks to finish.
     */
     UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
     void WaitForMetronomeCallbacksToComplete()
     {
-        while (HasListenerPendingCallback()) {}
-    }
-
-    FORCEINLINE bool HasListenerPendingCallback() 
-    {
-        for (auto listener : Listeners.getListeners())
-            if (listener->HasPendingCallback())
-                return true;
-        return false;
+        while (IsPendingCallback()) {}
     }
 
     UFUNCTION (BlueprintCallable, Category = "JUCE-Metronome")
@@ -229,10 +211,28 @@ private:
 	int  Numerator        = 4;
 	RhythmicUnitType Divisor = RhythmicUnitType::Beat;
 
+    juce::Atomic<int> NextSixteenthIndex;
+    juce::Atomic<int> NextEighthIndex;
+    juce::Atomic<int> NextBeatIndex;
+    juce::Atomic<int> NextBarIndex;
+    juce::Atomic<int> SixteenthCallbackPending;
+    juce::Atomic<int> EighthCallbackPending;
+    juce::Atomic<int> BeatCallbackPending;
+    juce::Atomic<int> BarCallbackPending;
     RhythmicUnit Sixteenth;
     RhythmicUnit Eighth;
     RhythmicUnit Beat;
     RhythmicUnit Bar;
+
+    bool IsPendingCallback()
+    {
+        return SixteenthCallbackPending.get() == 1 || EighthCallbackPending.get() == 1 || BeatCallbackPending.get() == 1 || BarCallbackPending.get() == 1;
+    }
+
+    void ScheduleAsyncSixteenthCallbackIfNeeded();
+    void ScheduleAsyncEighthCallbackIfNeeded();
+    void ScheduleAsyncBeatCallbackIfNeeded();
+    void ScheduleAsyncBarCallbackIfNeeded();
 
     FORCEINLINE void UpdateSubdivisions()
     {
