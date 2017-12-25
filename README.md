@@ -7,7 +7,7 @@ A plugin for the Unreal engine that links the JUCE library and facilitates the u
 ---------------------------------------------
 #Requirements
 ---------------------------------------------
-The JUCE C++ framework https://github.com/julianstorer/JUCE and the Unreal engine https://www.unrealengine.com/what-is-unreal-engine-4.
+The JUCE C++ framework https://github.com/WeAreROLI/JUCE and the Unreal engine https://www.unrealengine.com/what-is-unreal-engine-4.
 
 ---------------------------------------------
 #Setup
